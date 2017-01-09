@@ -1,0 +1,43 @@
+{
+  "name": "device-manager",
+  "version": "1.11.4",
+  "description": "Device manager",
+  "scripts": {
+    "start": "nodemon src/main.coffee",
+    "test": "coffeetape test/*.test.coffee | tap-summary",
+    "test-dev": "NODE_ENV=development nodemon test/*.test.* --exec coffeetape test/*.test.coffee | tap-summary",
+    "test-debug": "NODE_ENV=development coffeetape ./test/*.test.coffee",
+    "deploy": "coffee --output build --compile src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "[git@git.viriciti.com:10022]:device/updater-device.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "coffeetape": "^1.0.1",
+    "gulp": "^3.9.1",
+    "gulp-shell": "^0.6.3",
+    "leaked-handles": "^5.2.0",
+    "rsync": "^0.6.1",
+    "tap-summary": "^4.0.0",
+    "tape": "^4.8.0"
+  },
+  "dependencies": {
+    "@tn-group/device-mqtt": "^1.0.7",
+    "async": "^2.5.0",
+    "coffee-script": "^1.12.7",
+    "config": "^1.27.0",
+    "cson": "^4.1.0",
+    "debug": "^3.1.0",
+    "dockerode": "^2.5.3",
+    "moment": "^2.19.1",
+    "node-schedule": "^1.2.5",
+    "request": "^2.83.0",
+    "semver": "^5.4.1",
+    "string": "^3.3.3",
+    "underscore": "^1.8.3",
+    "winston": "^2.4.0"
+  }
+}

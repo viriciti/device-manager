@@ -1,0 +1,9 @@
+node_modules
+sync_excludes
+gulpfile.js
+certs
+meta
+docker_start.sh
+set_test_env.sh
+Dockerfile*
+test

@@ -1,0 +1,54 @@
+stages:
+  - test
+  - deploy
+  - dependencies
+  - release
+
+test:
+  stage: test
+  image: docker.viriciti.com/building-tools/project-compiler
+  services:
+    - toke/mosquitto
+  script:
+    - npm install --production
+    - ln -s /usr/local/lib/node_modules/tape node_modules/tape
+    - npm test
+  only:
+    - tags
+
+deploy:
+  stage: deploy
+  image: docker.viriciti.com/building-tools/project-compiler
+  artifacts:
+    paths:
+      - build
+  script:
+    - npm run deploy
+  only:
+    - tags
+
+dependencies:
+  image: docker.viriciti.com/building-tools/armhf-runner
+  stage: dependencies
+  artifacts:
+    paths:
+      - node_modules
+  script:
+    - npm install --production
+  only:
+    - tags
+
+release:
+  stage: release
+  script:
+    - TAG=( ${CI_COMMIT_TAG//[-.]/ } )
+    - if [[ ${TAG[0]} =~ [0-9]+ ]] ; then MAJOR=${TAG[0]}; else MAJOR=${TAG[1]}; fi
+    - docker login -u builder -p $BUILDER_TOKEN docker.viriciti.com
+    - docker build -t $CI_REGISTRY_IMAGE .
+    - docker tag $CI_REGISTRY_IMAGE $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    - if [ "${TAG}" == "test" ]; then exit 0; fi
+    - docker tag $CI_REGISTRY_IMAGE $CI_REGISTRY_IMAGE:${MAJOR}
+    - docker push $CI_REGISTRY_IMAGE:${MAJOR}
+  only:
+    - tags

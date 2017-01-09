@@ -1,0 +1,3 @@
+config/local.*
+set_test_env.sh
+Dockerfile.test

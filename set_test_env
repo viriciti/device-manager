@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+NUMOFDEV=$2
+
+function createContainers {
+	docker build -f Dockerfile.test -t devicemanager . && \
+	for i in `seq 1 $NUMOFDEV`; \
+	do \
+		docker run -h "device$i" \
+		--privileged --name "device$i" \
+		-e NODE_ENV=test \
+		--net host -d devicemanager; \
+	done
+}
+
+function removeContainers {
+	for i in `seq 1 $NUMOFDEV`; \
+	do \
+		docker rm -f "device$i"; \
+	done
+}
+
+if [ $1 == 'create' ]
+	then createContainers
+fi
+
+if [ $1 == 'rm' ]
+	then removeContainers
+fi
+
+
+# docker run -d -e NODE_ENV=production --name device-manager-test --net host -v /version:/version -v /var/run/docker.sock:/var/run/docker.sock -v /config/certs/:/certs docker.viriciti.com/device/device-manager:test
