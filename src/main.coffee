@@ -31,16 +31,19 @@ docker.init()
 
 # Init devicemqtt
 { host, port, tls, connectionOptions } = config.mqtt
+
+tls = null unless process.env.NODE_ENV is 'production'
+
 client = devicemqtt {
 	host
 	port
-	# tls
+	tls
 	clientId: HOSTNAME
 	extraOpts: connectionOptions
 }
 
-state = null
-updater = null
+state       = null
+updater     = null
 checkingJob = null
 
 client.on "connected", (socket) ->

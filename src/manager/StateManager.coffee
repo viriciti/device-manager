@@ -170,14 +170,8 @@ module.exports = (socket, docker, deviceId) ->
 
 	_getOSVersion = (cb) ->
 		fs.readFile "/version", (error, version) ->
-			if error
-				log.error "Error in version file: #{error.version}"
-				return cb error
-
-			unless version
-				errStr = "Version is undefined"
-				log.error errStr
-				return cb new Error errStr
+			return cb new Error "Error reading version file: #{error.message}" if error
+			return cb new Error "Version is undefined" unless version
 
 			cb null, version.toString().trim()
 
@@ -185,11 +179,11 @@ module.exports = (socket, docker, deviceId) ->
 		debug "Generating state object"
 
 		async.parallel
-			images: docker.listImages
+			images:     docker.listImages
 			containers: docker.listContainers
 			systemInfo: docker.getDockerInfo
-			osVersion: _getOSVersion
-			
+			osVersion:  _getOSVersion
+
 		, (error, { images, containers, systemInfo, osVersion }) ->
 			if error
 				log.error "Error generating state object: #{error.message}"
