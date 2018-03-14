@@ -15,7 +15,8 @@ COPY build/main.js /app/main.js
 COPY config /app/config
 COPY package.json /app/package.json
 
-ARG DOCKER_REGISTY_TOKEN=xxx
-ENV DOCKER_REGISTY_TOKEN=${DOCKER_REGISTY_TOKEN}
+ARG DOCKER_REGISTRY_TOKEN=xxx
+
+ENV DOCKER_REGISTRY_TOKEN=${DOCKER_REGISTRY_TOKEN}
 
 CMD ["node", "/app/main.js"]
