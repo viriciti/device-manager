@@ -32,7 +32,7 @@ docker.init()
 # Init devicemqtt
 { host, port, tls, connectionOptions, tlsActive } = config.mqtt
 
-tls = null unless tlsActive
+tls = null if config.development
 
 client = devicemqtt {
 	host

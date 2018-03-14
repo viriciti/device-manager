@@ -26,7 +26,7 @@ module.exports = (socket, docker, deviceId) ->
 	init = ->
 		log.info "Initializing."
 		localState.work = "idle"
-		# localState.isSerialCorrect = checkSerialNumber()
+		localState.isSerialCorrect = checkSerialNumber() unless config.development
 
 		socket.on "error", _handleSocketError
 
@@ -104,7 +104,6 @@ module.exports = (socket, docker, deviceId) ->
 
 	_handleStatusContainers = (status) ->
 		debug "Status containers is kicking state.."
-		# kickState()
 
 
 	setWork = (work) ->
@@ -191,7 +190,10 @@ module.exports = (socket, docker, deviceId) ->
 
 			state = {}
 			systemInfo = _.extend systemInfo, getIpAddresses()
-			# systemInfo = _.extend systemInfo, { osVersion }, { dmVersion: (require path.resolve __dirname, "../package.json").version }
+
+			unless config.development
+				systemInfo = _.extend systemInfo, { osVersion }, { dmVersion: (require path.resolve __dirname, "../package.json").version }
+
 			groups = _(getGroups()).values()
 			uptime = Math.floor(os.uptime() / 3600)
 

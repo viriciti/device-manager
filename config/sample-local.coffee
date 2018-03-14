@@ -2,7 +2,6 @@ module.exports =
 	mqtt:
 		host: "localhost"
 		port: 1883
-		tlsActive: false
 
 	groups:
 		path: "/home/<username>/groups"
@@ -13,3 +12,4 @@ module.exports =
 				username: "<your-gitlab-username"
 				password: process.env.GITLAB_ACCESS_TOKEN
 
+	development: true

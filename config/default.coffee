@@ -9,7 +9,6 @@ module.exports =
 		connectionOptions:
 			keepalive: 1800
 			rejectUnauthorized: true
-		tlsActive: true
 
 	devicemqtt:
 		queueTimeout: 5000 # never touch it
@@ -44,3 +43,5 @@ module.exports =
 				password: process.env.DOCKER_REGISTRY_TOKEN
 				email: "device-user@viriciti.com"
 				serveraddress: "https://index.docker.io/v1"
+
+	development: false
