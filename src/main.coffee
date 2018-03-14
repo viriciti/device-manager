@@ -30,9 +30,9 @@ docker = new Docker config.docker
 docker.init()
 
 # Init devicemqtt
-{ host, port, tls, connectionOptions } = config.mqtt
+{ host, port, tls, connectionOptions, tlsActive } = config.mqtt
 
-tls = null unless process.env.NODE_ENV is 'production'
+tls = null unless tlsActive
 
 client = devicemqtt {
 	host

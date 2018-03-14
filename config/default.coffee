@@ -9,6 +9,7 @@ module.exports =
 		connectionOptions:
 			keepalive: 1800
 			rejectUnauthorized: true
+		tlsActive: true
 
 	devicemqtt:
 		queueTimeout: 5000 # never touch it

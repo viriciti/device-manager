@@ -2,6 +2,7 @@ module.exports =
 	mqtt:
 		host: "localhost"
 		port: 1883
+		tlsActive: false
 
 	groups:
 		path: "/home/<username>/groups"
