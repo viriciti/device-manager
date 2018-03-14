@@ -1,6 +1,6 @@
 {
   "name": "device-manager",
-  "version": "1.12.2",
+  "version": "1.12.3",
   "description": "Device manager",
   "scripts": {
     "start": "nodemon src/main.coffee",
