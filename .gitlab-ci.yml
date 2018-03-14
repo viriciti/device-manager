@@ -44,7 +44,7 @@ release:
     - TAG=( ${CI_COMMIT_TAG//[-.]/ } )
     - if [[ ${TAG[0]} =~ [0-9]+ ]] ; then MAJOR=${TAG[0]}; else MAJOR=${TAG[1]}; fi
     - docker login -u builder -p $BUILDER_TOKEN docker.viriciti.com
-    - docker build -t $CI_REGISTRY_IMAGE .
+    - docker build --build-arg DOCKER_REGISTRY_TOKEN=${DOCKER_REGISTRY_TOKEN} -t $CI_REGISTRY_IMAGE .
     - docker tag $CI_REGISTRY_IMAGE $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
     - if [ "${TAG}" == "test" ]; then exit 0; fi
