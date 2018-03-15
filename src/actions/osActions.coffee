@@ -5,17 +5,19 @@ debug   = (require "debug") "app:actions:os"
 
 { host, port, path } = config.osUpdater.endpoint
 
-module.exports = ->
-	
+module.exports = (state) ->
+
 	updateDevicesOs = (version, cb) ->
+		state.setWork "Updating OS to version #{version}"
+
 		request.post "http://#{host}:#{port}#{path}"
 			, json: { version }
 			, (error, response, body) ->
+				state.setWork "Idle"		
+				
 				return cb new Error 'ECONNREFUSED' if error?.code is 'ECONNREFUSED'
+				return cb new Error body if response?.statusCode isnt 200
 					
-				if response?.statusCode isnt 200
-					return cb new Error body
-
 				cb null, body
 				
 	return { updateDevicesOs }

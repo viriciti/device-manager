@@ -28,7 +28,7 @@ module.exports = (docker, state, updater) ->
 		(imagesActions docker, state),
 		(deviceActions state),
 		(groupsActions state, updater)
-		osActions()
+		(osActions state)
 	)
 
 	return { execute }

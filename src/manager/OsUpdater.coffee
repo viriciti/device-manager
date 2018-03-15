@@ -6,31 +6,11 @@ debug  = (require "debug") "app:app-updater"
 
 log = (require "../lib/Logger") "OS Updater"
 
-{ updateDevicesOs } = (require "../actions/osActions")()
 
-module.exports = (mqttSocket) ->
+module.exports = (mqttSocket, state) ->
+	{ updateDevicesOs } = (require "../actions/osActions") state
+
 	operations = []
-	# leVersion = null
-	# doingStuff = false
-
-	# _handleVersion = (version) ->
-	#     leVersion = version
-	#     startRetry() unless doingStuff
-
-	# startRetry = () ->
-	#     doingStuff = true
-	#     { retryInterval, retryTimes } = config.osUpdater.endpoint
-
-	#     async.retry { interval: retryInterval, times: retryTimes }, (next) ->
-	#         updateDevicesOs leVersion, (error) ->
-	#             return next error if error.message is "ECONNREFUSED"
-	#             log.error error.message if error
-	#             next()
-
-	#     , (error) ->
-	#         doingStuff = false
-	#         return log.error error.message if error
-	#         log.info "Device updated to version #{version}"
 
 	_handleVersion = (version) ->  
 		if not _.isEmpty operations
@@ -65,7 +45,7 @@ module.exports = (mqttSocket) ->
 		init: ->
 			{ mqttTopic } = config.osUpdater
 
-			mqttSocket.on "enabledOsVersion", _handleVersion
+			mqttSocket.on mqttTopic, _handleVersion
 
 			mqttSocket.customSubscribe
 				topic: mqttTopic
@@ -77,5 +57,5 @@ module.exports = (mqttSocket) ->
 
 
 		clean: ->
-			mqttSocket.removeListener "enabledOsVersion", _handleVersion
+			mqttSocket.removeListener mqttTopic, _handleVersion
 	}

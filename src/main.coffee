@@ -68,7 +68,7 @@ client.on "connected", (socket) ->
 	updater.init()
 
 	# Init os updater
-	osUpdater = OsUpdater socket
+	osUpdater = OsUpdater socket, state
 	osUpdater.init()
 
 	# Period checking of the Docker state

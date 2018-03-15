@@ -25,7 +25,7 @@ module.exports =
 		state: 5
 
 	osUpdater:
-		mqttTopic: 'enabledOsVersion'
+		mqttTopic: "enabledOsVersion"
 		endpoint:
 			retryInterval: 10000
 			retryTimes: Infinity
