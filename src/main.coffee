@@ -48,7 +48,7 @@ osUpdater   = null
 checkingJob = null
 
 client.on "connected", (socket) ->
-	state?.clean() 
+	state?.clean()
 	updater?.clean()
 	osUpdater?.clean()
 
@@ -128,9 +128,7 @@ client.on "connected", (socket) ->
 	socket
 		.on "action", _onAction
 		.once "disconnected", ->
-			checkingJob.cancel()
-			log.warn "Disconnected from MQTT Broker"
-			socket.removeListener "action", _onAction
+			throw new Error 'Disconnected from MQTT Broker! Crashing myself!'
 
 client.on "error", (error) ->
 	log.error "An error occured: #{error.message}"

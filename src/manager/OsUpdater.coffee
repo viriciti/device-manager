@@ -18,17 +18,20 @@ module.exports = (mqttSocket, state) ->
 	_handleVersion = (version) ->
 		log.info "Received request to update OS to version #{version}"
 
-		socket.on "logs", (updateLog) ->
+		_onLogs = (updateLog) ->
 			log.info "Updating log: #{updateLog}"
 
 			if updateLog is "done"
 				state.setWork "Idle"
 				log.info "OS updated correctly to version #{version}"
-				return socket.close()
 
 			state.setWork "Updating OS: #{updateLog}"
 
-		socket.emit 'update', version, (error) ->
+		socket
+			.on "logs", _onLogs
+			.on "disconnect", -> socket.removeListener "logs", _onLogs
+
+		socket.emit "update", version, (error) ->
 			return log.error error if error
 
 	return {
