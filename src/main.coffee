@@ -44,12 +44,13 @@ client = devicemqtt {
 
 state       = null
 updater     = null
+osUpdater   = null
 checkingJob = null
 
 client.on "connected", (socket) ->
-	state.clean()   if state
-	updater.clean() if updater
-	osUpdater.clean() if osUpdater
+	state?.clean() 
+	updater?.clean()
+	osUpdater?.clean()
 
 	log.info "Connected to the MQTT Broker"
 

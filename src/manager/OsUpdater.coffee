@@ -16,6 +16,7 @@ module.exports = (mqttSocket, state) ->
 		if not _.isEmpty operations
 			log.info "New request arrived with version #{version}. Canceling old requests!"
 			_.forEach operations, (o) -> o.stop()
+			operations = []
 
 		log.info "Updating device to version `#{version}`"
 
@@ -23,11 +24,11 @@ module.exports = (mqttSocket, state) ->
 			retries: 30,
 			factor: 3,
 			minTimeout: 1 * 1000
-			randomize: false
 
 		operations.push operation
 
 		operation.attempt (currentAttempt) ->
+			console.log operations.length
 			updateDevicesOs version, (error, result) ->
 				return operation.retry error if error?.message is "ECONNREFUSED"
 				if error
@@ -57,5 +58,7 @@ module.exports = (mqttSocket, state) ->
 
 
 		clean: ->
+			{ mqttTopic } = config.osUpdater
+
 			mqttSocket.removeListener mqttTopic, _handleVersion
 	}
