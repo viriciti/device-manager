@@ -2,6 +2,7 @@ config = require "config"
 async  = require "async"
 retry  = require "retry"
 _      = require "underscore"
+io     = require "socket.io-client"
 debug  = (require "debug") "app:app-updater"
 
 log = (require "../lib/Logger") "OS Updater"
@@ -9,45 +10,37 @@ log = (require "../lib/Logger") "OS Updater"
 
 module.exports = (mqttSocket, state) ->
 	{ updateDevicesOs } = (require "../actions/osActions") state
+	{ host, port, event } = config.osUpdater.endpoint
 
-	operations = []
+	osUpdaterUrl = "http://#{host}:#{port}"
+	socket = null
 
-	_handleVersion = (version) ->  
-		if not _.isEmpty operations
-			log.info "New request arrived with version #{version}. Canceling old requests!"
-			_.forEach operations, (o) -> o.stop()
-			operations = []
+	_handleVersion = (version) ->
+		log.info "Received request to update OS to version #{version}"
 
-		log.info "Updating device to version `#{version}`"
+		socket.on "logs", (updateLog) ->
+			log.info "Updating log: #{updateLog}"
 
-		operation = retry.operation
-			retries: 30,
-			factor: 3,
-			minTimeout: 1 * 1000
+			if updateLog is "done"
+				state.setWork "Idle"
+				log.info "OS updated correctly to version #{version}"
+				return socket.close()
 
-		operations.push operation
+			state.setWork "Updating OS: #{updateLog}"
 
-		operation.attempt (currentAttempt) ->
-			console.log operations.length
-			updateDevicesOs version, (error, result) ->
-				return operation.retry error if error?.message is "ECONNREFUSED"
-				if error
-					log.error "Error: #{error}" 
-				else
-					log.info "Success: #{result}"
-
-				_.forEach operations, (o) -> o.stop()
-				operations = []
-				
-
-
+		socket.emit 'update', version, (error) ->
+			return log.error error if error
 
 	return {
 		init: ->
 			{ mqttTopic } = config.osUpdater
 
-			mqttSocket.on mqttTopic, _handleVersion
+			socket = io osUpdaterUrl
+			socket
+				.on "connect", -> log.info "Connected to os updater #{osUpdaterUrl}"
+				.on "error", (error) -> log.error error.message if error
 
+			mqttSocket.on mqttTopic, _handleVersion
 			mqttSocket.customSubscribe
 				topic: mqttTopic
 				opts:

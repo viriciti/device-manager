@@ -27,11 +27,9 @@ module.exports =
 	osUpdater:
 		mqttTopic: "enabledOsVersion"
 		endpoint:
-			retryInterval: 10000
-			retryTimes: Infinity
 			host: "localhost"
 			port: 3003
-			path: "/update"
+			event: "update"
 
 	docker:
 		socketPath: "/var/run/docker.sock"
