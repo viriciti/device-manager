@@ -121,7 +121,7 @@ client.on "connected", (socket) ->
 				log.error "Error processing action `#{action}`: #{error.message}"
 			else
 				log.info "Action `#{action}` completed"
-			debug "Action queue lenght: #{queue.length()}"
+			debug "Action queue length: #{queue.length()}"
 
 		debug "Action queue lenght: #{queue.length()}"
 

@@ -29,7 +29,6 @@ module.exports =
 		endpoint:
 			host: "localhost"
 			port: 3003
-			event: "update"
 
 	docker:
 		socketPath: "/var/run/docker.sock"

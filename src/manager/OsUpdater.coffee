@@ -7,10 +7,8 @@ debug  = (require "debug") "app:app-updater"
 
 log = (require "../lib/Logger") "OS Updater"
 
-
 module.exports = (mqttSocket, state) ->
-	{ updateDevicesOs } = (require "../actions/osActions") state
-	{ host, port, event } = config.osUpdater.endpoint
+	{ host, port } = config.osUpdater.endpoint
 
 	osUpdaterUrl = "http://#{host}:#{port}"
 	socket = null
