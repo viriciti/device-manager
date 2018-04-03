@@ -47,17 +47,4 @@ module.exports = (state) ->
 					state.setWork "Reboot command received"
 					cb()
 
-	updateDevicesOs = (version, cb) ->
-		state.setWork "Updating OS to version #{version}"
-
-		request.post "http://#{host}:#{port}#{path}"
-			, json: { version }
-			, (error, response, body) ->
-				state.setWork "Idle"
-
-				return cb new Error 'ECONNREFUSED' if error?.code is 'ECONNREFUSED'
-				return cb new Error body if response?.statusCode isnt 200
-
-				cb null, body
-
-	return { updateDevicesOs, reboot }
+	return { reboot }
