@@ -23,7 +23,7 @@ module.exports = (mqttSocket, state) ->
 				state.setWork "Idle"
 				log.info "OS updated correctly to version #{version}"
 
-			state.setWork "Updating OS: #{updateLog}"
+			state.setWork "State: #{updateLog}"
 
 		socket
 			.on "logs", _onLogs
