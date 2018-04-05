@@ -102,9 +102,8 @@ client.on "connected", (socket) ->
 
 					if error
 						return reply.send type: "error", data: error.message, (mqttErr, ack) ->
-							if mqttErr
-								log.error "An error occured sending the message: #{error.message}"
-								return cb()
+							log.error "An error occured sending the message: #{error.message}" if mqttErr
+							return cb()
 
 					reply.send type: "success", data: result, (error, ack) ->
 						log.error "An error occured sending the message: #{error.message}" if error
