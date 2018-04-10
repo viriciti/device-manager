@@ -1,9 +1,11 @@
-config = require "config"
-async  = require "async"
-retry  = require "retry"
-_      = require "underscore"
-io     = require "socket.io-client"
-debug  = (require "debug") "app:app-updater"
+config        = require "config"
+async         = require "async"
+retry         = require "retry"
+_             = require "underscore"
+io            = require "socket.io-client"
+debug         = (require "debug") "app:app-updater"
+{ mqttTopic } = config.osUpdater
+
 
 log = (require "../lib/Logger") "OS Updater"
 

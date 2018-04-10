@@ -72,13 +72,14 @@ module.exports = (socket, docker, deviceId) ->
 					qos: 2
 			, (error) ->
 				if error
-					log.error "Error in cutom state publish: #{error.message}"
+					log.error "Error in custom state publish: #{error.message}"
 				else
 					log.info "State published!"
 
 				cb? error
 
-	kickState = _.throttle (-> _sendStateToMqtt()), 2000
+	kickState     = _.throttle _sendStateToMqtt, 2000
+	slowKickState = _.throttle _sendStateToMqtt, 60000
 
 	notifyOnlineStatus = (cb) ->
 		log.info "Setting status: online"
@@ -93,7 +94,6 @@ module.exports = (socket, docker, deviceId) ->
 				log.error "Error in online status publish: #{error.message}"
 
 			cb error
-
 
 	_handleDockerLogs = (logs) ->
 		debug "Publishing log line.."
@@ -111,11 +111,9 @@ module.exports = (socket, docker, deviceId) ->
 		localState = Object.assign {}, localState, { work }
 
 		debug "Set work kicking state"
-		kickState()
-
+		slowKickState()
 
 	getDeviceId = -> deviceId
-
 
 	getGroups = ->
 		debug "Get groups"

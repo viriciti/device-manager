@@ -4,35 +4,24 @@ config  = require "config"
 async   = require "async"
 debug   = (require "debug") "app:actions:os"
 io      = require "socket.io-client"
+i2c     = require 'i2c-bus'
+
+bus     = i2c.openSync 0
 
 log = (require "../lib/Logger") "OS Updater"
 
 module.exports = (state) ->
 
 	reboot = (payload, cb) ->
-		log.info "Received reboot command"
-		state.setWork "Rebooting"
+		unless process.env.NODE_ENV is 'production'
+			log.info "Reboot command received, not doing anything because env is #{process.env.NODE_ENV}"
+			return
 
-		{ host, port } = config.osUpdater.endpoint
+		log.info "Rebooting"
 
-		osUpdaterUrl = "http://#{host}:#{port}"
-
-		retryOpts =
-			times:    10
-			interval: (count) -> 50 * Math.pow 2, count
-
-		retries = 0
-
-		async.retry retryOpts, (cb) ->
-			request.post osUpdaterUrl, (error, result) ->
-				if error
-					state.setWork "IOU unreachable #{retries}"
-					retries++
-					return cb error
-				state.setWork "Reboot command received"
-				cb()
-		, (error) ->
-			state.setWork "Sending reboot failed" if error
-			cb error
+		# 0x55 is chip address
+		# 0x62 is SOM soft reboot address
+		# 0x57 is the required value
+		bus.writeByteSync 0x55, 0x62, 0x57
 
 	return { reboot }
