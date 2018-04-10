@@ -23,7 +23,7 @@ module.exports = (mqttSocket, state) ->
 
 			_onErrorLog = (error) ->
 				log.error "os-updater error! #{error}"
-				state.setWork "OS updater ERROR!"
+				state.setWork "OS updater ERROR! #{error}"
 
 			_onLogs = (updateLog) ->
 				updateLog = JSON.stringify(updateLog) if typeof updateLog is "object"
