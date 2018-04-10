@@ -13,35 +13,32 @@ module.exports = (mqttSocket, state) ->
 	{ host, port } = config.osUpdater.endpoint
 
 	osUpdaterUrl = "http://#{host}:#{port}"
-	socket = null
-
-	_handleVersion = (version) ->
-		log.info "Received request to update OS to version #{version}"
-
-		_onLogs = (updateLog) ->
-			log.info "Updating log: #{updateLog}"
-
-			if updateLog is "done"
-				state.setWork "Idle"
-				log.info "OS updated correctly to version #{version}"
-
-			state.setWork "State: #{updateLog}"
-
-		socket
-			.on "logs", _onLogs
-			.on "disconnect", -> socket.removeListener "logs", _onLogs
-
-		socket.emit "update", version, (error) ->
-			return log.error error if error
 
 	return {
 		init: ->
-			{ mqttTopic } = config.osUpdater
+			_handleVersion = (version) ->
+				log.info "Received request to update OS to version #{version}"
+
+				socket.emit "update", version, (error) -> log.error error if error
+
+			_onErrorLog = (error) ->
+				log.error "os-updater error! #{error}"
+				state.setWork "OS updater ERROR!"
+
+			_onLogs = (updateLog) ->
+				updateLog = JSON.stringify(updateLog) if typeof updateLog is "object"
+
+				log.info "Updating log: #{updateLog}"
+
+				state.setWork "State: #{updateLog}"
 
 			socket = io osUpdaterUrl
 			socket
 				.on "connect", -> log.info "Connected to os updater #{osUpdaterUrl}"
-				.on "error", (error) -> log.error error.message if error
+				.on "logs", _onLogs
+				.on "errorLog", _onErrorLog
+				.on "error", (error) -> log.error "Error on socket.io #{error.message}"
+				.on "disconnect", -> log.info "Disconnected from os updater"
 
 			mqttSocket.on mqttTopic, _handleVersion
 			mqttSocket.customSubscribe
@@ -54,7 +51,5 @@ module.exports = (mqttSocket, state) ->
 
 
 		clean: ->
-			{ mqttTopic } = config.osUpdater
-
 			mqttSocket.removeListener mqttTopic, _handleVersion
 	}
