@@ -126,8 +126,8 @@ client.on "connected", (socket) ->
 
 	socket
 		.on "action", _onAction
-		.once "disconnected", ->
-			throw new Error 'Disconnected from MQTT Broker! Crashing myself!'
+		.on "disconnected", ->
+			log.warn "Disconnected from mqtt"
 
 client.on "error", (error) ->
 	log.error "An error occured: #{error.message}"
