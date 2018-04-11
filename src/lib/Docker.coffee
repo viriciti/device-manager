@@ -1,16 +1,18 @@
+Dockerode        = require "dockerode"
+S                = require "string"
 _                = require "underscore"
 async            = require "async"
 debug            = (require "debug") "app:docker"
-Dockerode        = require "dockerode"
+jsonstream2      = require "jsonstream2"
 moment           = require "moment"
-S                = require "string"
+rimraf           = require "rimraf"
 { EventEmitter } = require "events"
 
 log              = (require "./Logger") "Docker"
 DockerLogsParser = require "./DockerLogsParser"
 
 class Docker extends EventEmitter
-	constructor: ({ @socketPath, @maxRetries, @registry_auth }) ->
+	constructor: ({ @socketPath, @maxRetries, @registry_auth, @layerRegex }) ->
 		@dockerClient = @_createConnection()
 		@logsParser = new DockerLogsParser @
 
@@ -73,10 +75,11 @@ class Docker extends EventEmitter
 
 		log.info "Pull image `#{name}`..."
 
+		conflicted  = false
 		credentials = null
 		credentials = @registry_auth.credentials if @registry_auth.required
 
-		@dockerClient.pull name, { authconfig: credentials}, (error, stream) =>
+		@dockerClient.pull name, { authconfig: credentials }, (error, stream) =>
 			if error
 				log.error "Error pulling `#{name}`: #{error.message}"
 				return next error
@@ -101,22 +104,45 @@ class Docker extends EventEmitter
 					.removeListener "error", _handleStreamError
 					.removeListener "end", _handleStreamEnd
 
-			_handleStreamData = (data) ->
+			_handleStreamData = (data) =>
 				pulling = true
 
+				return unless data.error?
+
+				conflictingDirectory = @layerRegex.exec data.error
+					.shift()
+					.trim()
+
+				return unless conflictingDirectory?
+
+				pulling    = false
+				conflicted = true
+				_removeHandlers()
+
+				debug "Removing conflicting directory: #{conflictingDirectory}"
+				rimraf conflictingDirectory, (error) =>
+					return next error if error
+
+					@pullImage { name }, next
+
 			_handleStreamError = (error) ->
+				return if conflicted
+
 				log.error "Error pulling `#{name}` (in stream): #{error.message}"
 				pulling = false
 				_removeHandlers()
 				next error
 
 			_handleStreamEnd = ->
+				return if conflicted
+
 				pulling = false
 				_removeHandlers()
 				log.info "Pulling ended!"
 				next()
 
 			stream
+				.pipe jsonstream2.parse()
 				.on "data", _handleStreamData
 				.on "error", _handleStreamError
 				.once "end", _handleStreamEnd
