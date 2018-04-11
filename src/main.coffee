@@ -59,7 +59,7 @@ client.on "connected", (socket) ->
 	state.init()
 
 	debug "Kicking state"
-	state.kickState()
+	state.throttledSendState()
 	state.notifyOnlineStatus (error) ->
 		throw error if error
 		log.info "Initial state sent successfully!"
@@ -109,7 +109,7 @@ client.on "connected", (socket) ->
 						log.error "An error occured sending the message: #{error.message}" if error
 						if action isnt "getContainerLogs"
 							debug "Action `#{action}` kicking state"
-							state.kickState()
+							state.throttledSendState()
 
 						cb()
 

@@ -24,12 +24,12 @@ module.exports = (state) ->
 		async.retry retryOpts, (cb) ->
 			request.post osUpdaterUrl, (error, result) ->
 				if error
-					state.setWork "IOU unreachable"
+					state.addError "OS updater unreachable"
 					return cb error
 				state.setWork "Reboot command received"
 				cb()
 		, (error) ->
-			state.setWork "Sending reboot failed" if error
+			state.addError "Sending reboot failed" if error
 			cb error
 
 	return { reboot }

@@ -12,9 +12,12 @@ schedule = require "node-schedule"
 getIpAddresses = require "../helpers/get_ipaddresses"
 log            = (require "../lib/Logger") "StateManager"
 
+DATE_FORMAT = "YYYY-MM-DD hh:mm:ss"
+
 module.exports = (socket, docker, deviceId) ->
 	localState =
 		work: ""
+		errors: []
 		globalGroups: {}
 		isSerialCorrect: ""
 
@@ -45,7 +48,7 @@ module.exports = (socket, docker, deviceId) ->
 
 		stateJob = schedule.scheduleJob "0 */#{config.cronJobs.state} * * * *", ->
 			debug "Scheduled kick state: #{config.cronJobs.state}"
-			kickState()
+			throttledSendState()
 
 	clean = ->
 		log.info "Cleaning."
@@ -64,9 +67,13 @@ module.exports = (socket, docker, deviceId) ->
 
 			debug "State is", JSON.stringify _.omit state, ["images", "containers"]
 
+			stateStr = JSON.stringify state
+			byteLength = Buffer.byteLength( stateStr, 'utf8' )
+			log.warn "Buffer.byteLength: #{byteLength}" if byteLength > 20000 # .02MB spam per 2 sec = 864MB in 24 hrs
+
 			socket.customPublish
 				topic: "devices/#{deviceId}/state"
-				message: JSON.stringify state
+				message: stateStr
 				opts:
 					retain: true
 					qos: 2
@@ -78,8 +85,7 @@ module.exports = (socket, docker, deviceId) ->
 
 				cb? error
 
-	kickState     = _.throttle _sendStateToMqtt, 2000
-	slowKickState = _.throttle _sendStateToMqtt, 60000
+	throttledSendState = _.throttle (-> _sendStateToMqtt()), 2000
 
 	notifyOnlineStatus = (cb) ->
 		log.info "Setting status: online"
@@ -109,9 +115,19 @@ module.exports = (socket, docker, deviceId) ->
 	setWork = (work) ->
 		debug "Set work", work
 		localState = Object.assign {}, localState, { work }
+		throttledSendState()
 
-		debug "Set work kicking state"
-		slowKickState()
+	addError = (error) ->
+		log.error error
+		error = error.message if typeof error is "object"
+		error = error.substr 0, 20 # To reduce stringified data size
+		error = "#{moment().format DATE_FORMAT} - #{error}"
+
+		errors     = localState.errors.concat error
+		errors     = _.rest errors if errors > 10
+		localState = Object.assign {}, localState, { errors }
+
+		throttledSendState()
 
 	getDeviceId = -> deviceId
 
@@ -140,7 +156,7 @@ module.exports = (socket, docker, deviceId) ->
 		log.info "Setting groups file: #{groups}"
 		fs.writeFileSync groupsFilePath, groups
 		debug "Set groups kicking state..."
-		kickState()
+		throttledSendState()
 
 	setGlobalGroups = (globalGroups) ->
 		debug "Set global groups to: #{JSON.stringify globalGroups}"
@@ -208,8 +224,9 @@ module.exports = (socket, docker, deviceId) ->
 			cb null, state
 
 	return {
+		addError
 		init
-		kickState
+		throttledSendState
 		notifyOnlineStatus
 		setWork
 		clean
