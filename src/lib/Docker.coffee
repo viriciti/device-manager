@@ -115,15 +115,21 @@ class Docker extends EventEmitter
 					.trim()
 
 				return unless conflictingDirectory?
-				return next new Error "Unable to fix docker layer: too many retries" if @pullRetries > @layer.regex.maxRetries
+
+				if @pullRetries > @layer.regex.maxRetries
+					message = "Unable to fix docker layer: too many retries"
+					log.error message
+					return next new Error message
 
 				pulling    = false
 				conflicted = true
 				_removeHandlers()
 
-				debug "Removing conflicting directory: #{conflictingDirectory}"
+				log.warn "Removing conflicting directory: #{conflictingDirectory}"
 				rimraf conflictingDirectory, (error) =>
-					return next error if error
+					if error
+						log.error error.message
+						return next error
 
 					@pullRetries++
 					@pullImage { name }, next
