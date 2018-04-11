@@ -12,7 +12,7 @@ log              = (require "./Logger") "Docker"
 DockerLogsParser = require "./DockerLogsParser"
 
 class Docker extends EventEmitter
-	constructor: ({ @socketPath, @maxRetries, @registry_auth, @layerRegex }) ->
+	constructor: ({ @socketPath, @maxRetries, @registry_auth, @layer }) ->
 		@dockerClient = @_createConnection()
 		@logsParser = new DockerLogsParser @
 
@@ -75,9 +75,10 @@ class Docker extends EventEmitter
 
 		log.info "Pull image `#{name}`..."
 
-		conflicted  = false
-		credentials = null
-		credentials = @registry_auth.credentials if @registry_auth.required
+		@pullRetries or= 0
+		conflicted     = false
+		credentials    = null
+		credentials    = @registry_auth.credentials if @registry_auth.required
 
 		@dockerClient.pull name, { authconfig: credentials }, (error, stream) =>
 			if error
@@ -109,11 +110,12 @@ class Docker extends EventEmitter
 
 				return unless data.error?
 
-				conflictingDirectory = @layerRegex.exec data.error
+				conflictingDirectory = @layer.regex.exec data.error
 					.shift()
 					.trim()
 
 				return unless conflictingDirectory?
+				return next new Error "Unable to fix docker layer: too many retries" if @pullRetries > @layer.regex.maxRetries
 
 				pulling    = false
 				conflicted = true
@@ -123,6 +125,7 @@ class Docker extends EventEmitter
 				rimraf conflictingDirectory, (error) =>
 					return next error if error
 
+					@pullRetries++
 					@pullImage { name }, next
 
 			_handleStreamError = (error) ->
@@ -133,10 +136,11 @@ class Docker extends EventEmitter
 				_removeHandlers()
 				next error
 
-			_handleStreamEnd = ->
+			_handleStreamEnd = =>
 				return if conflicted
 
-				pulling = false
+				@pullRetries = 0
+				pulling      = false
 				_removeHandlers()
 				log.info "Pulling ended!"
 				next()

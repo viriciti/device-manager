@@ -31,7 +31,9 @@ module.exports =
 			port: 3003
 
 	docker:
-		layerRegex: /(\/(var\/lib\/)?docker\/image\/overlay2\/layerdb\/sha256\/[\w\d]+)/
+		layer:
+			regex: /(\/(var\/lib\/)?docker\/image\/overlay2\/layerdb\/sha256\/[\w\d]+)/
+			maxRetries: 5
 		socketPath: "/var/run/docker.sock"
 		maxRetries: 5
 		registry_auth:
