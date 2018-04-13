@@ -28,7 +28,7 @@ module.exports = (mqttSocket, state) ->
 		socket.emit "update-dm", version, (error) -> log.error error if error
 
 	_onErrorLog = (error) ->
-		state.addLog "error", "OS updater: #{error}"
+		state.publishLog "error", "OS updater: #{error}"
 
 	_onLogs = (updateLog) ->
 		updateLog = JSON.stringify(updateLog) if typeof updateLog is "object"

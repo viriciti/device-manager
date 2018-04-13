@@ -14,16 +14,7 @@ log            = (require "../lib/Logger") "StateManager"
 
 DATE_FORMAT = "YYYY-MM-DD hh:mm:ss"
 
-allowedLogsTypes =
-	info: 1
-	error: 1
-	warning: 1
-
 module.exports = (socket, docker, deviceId) ->
-	logsState =
-		info: []
-		error: []
-		warning: []
 
 	localState =
 		work: ""
@@ -109,7 +100,6 @@ module.exports = (socket, docker, deviceId) ->
 			cb error
 
 	_handleDockerLogs = (logs) ->
-		console.log "logs", logs
 		debug "Publishing log line.."
 		socket.customPublish {
 			topic: "devices/#{deviceId}/logs"
@@ -124,28 +114,15 @@ module.exports = (socket, docker, deviceId) ->
 		localState = Object.assign {}, localState, { work }
 		throttledSendState()
 
-	# We need some way to persist a couple of logs
-	# because we want to be able to show them in updater server
-	# Right now updater server subs to the logs topic, but this is not enough as we want more than one log
-	# So lets keep them in the state manager
-	# Whenever there is an error we append and send the error state to a seperate mqtt topic
-	addLog = (type, message) ->
-		throw new Error "Log type #{type} is not allowed" unless logsState[type]
-
-		log[type] message
-
-		message = message.message if typeof message is "object"
-		message = message.substr 0, 47 # To reduce stringified data size
-		message = message + "..." if message.length >= 47
-
-		data = { message, time: Date.now() / 1000 }
-
-		logs = logsState[type].concat data
-		logs = _.rest logs if logs > 10
-
-		logsState = Object.assign {}, logsState, "#{type}": logs
-
-		throttledPublishLogState()
+	publishLog = (type, message) ->
+		data = { type, message, time: Date.now() / 1000 }
+		socket.customPublish {
+			topic: "devices/#{deviceId}/logs"
+			message: JSON.stringify data
+			opts:
+				retain: true
+				qos: 2
+		}
 
 	throttledPublishLogState = _.throttle ->
 		socket.customPublish {
@@ -254,7 +231,7 @@ module.exports = (socket, docker, deviceId) ->
 			cb null, state
 
 	return {
-		addLog
+		publishLog
 		init
 		throttledSendState
 		notifyOnlineStatus

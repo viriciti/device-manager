@@ -181,7 +181,7 @@ module.exports = (docker, state, mqttSocket) ->
 
 		], (error, result) ->
 			if error
-				state.addLog "error", error
+				state.publishLog "error", error
 				log.error "Error during update: #{error.message}"
 
 			log.info "Updating done."
