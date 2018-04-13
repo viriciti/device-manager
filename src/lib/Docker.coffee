@@ -72,7 +72,7 @@ class Docker extends EventEmitter
 	###
 		Images API
 	###
-	pullImage: ({ name }, cb) =>
+	pullImage: ({ name }, cb, pullRetries = 0) =>
 		next = _.once cb
 
 		log.info "Pull image `#{name}`..."
@@ -100,7 +100,7 @@ class Docker extends EventEmitter
 			pump [
 				stream
 				jsonstream2.parse()
-				new LayerFixer()
+				new LayerFixer pullRetries
 			], (error) ->
 				pulling = false
 				clearInterval _pullingPingTimeout
@@ -112,7 +112,7 @@ class Docker extends EventEmitter
 						if error
 							log.error error.message
 							return next error
-						@pullImage { name }, next
+						@pullImage { name }, next, ++pullRetries
 
 				next error
 

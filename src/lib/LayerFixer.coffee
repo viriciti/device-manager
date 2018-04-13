@@ -2,7 +2,7 @@
 config       = require "config"
 
 class LayerFixer extends Writable
-    constructor: ->
+    constructor: (@pullRetries = 0) ->
         super objectMode: true
 
         @pullRetries = 0
