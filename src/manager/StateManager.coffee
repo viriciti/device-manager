@@ -16,45 +16,34 @@ DATE_FORMAT = "YYYY-MM-DD hh:mm:ss"
 
 module.exports = (socket, docker, deviceId) ->
 
+	checkSerialNumber = ->
+		return true if config.development
+		certFile = fs.readFileSync config.mqtt.tls.cert
+		certSerial = (S certFile.toString())
+			.between "CN=vc-", "/name"
+			.s
+
+		debug "Check serial number positive:", deviceId is "vc-#{certSerial}"
+		deviceId is "vc-#{certSerial}"
+
 	localState =
-		work: ""
+		work: "idle"
 		errors: []
 		globalGroups: {}
-		isSerialCorrect: ""
+		isSerialCorrect: checkSerialNumber()
 
 	groupsFilePath = config.groups.path
-	pingJob = null
-	stateJob = null
 
+	customPublish = (opts, cb) ->
+		return cb?() unless socket
+		socket opts, cb
 
-	init = ->
-		log.info "Initializing."
-		localState.work = "idle"
-		localState.isSerialCorrect = checkSerialNumber() unless config.development
-
-		socket.on "error", _handleSocketError
-
-		docker.on "logs", _handleDockerLogs
-
-		# Ping for keeping the connection on
-		pingJob = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *", ->
-			debug "Scheduled ping: #{config.cronJobs.ping}"
-			socket.customPublish
-				topic: "ping"
-				message: deviceId
-			, (error) ->
-				log.error error if error
-
-		stateJob = schedule.scheduleJob "0 */#{config.cronJobs.state} * * * *", ->
-			debug "Scheduled kick state: #{config.cronJobs.state}"
-			throttledSendState()
-
-	clean = ->
-		log.info "Cleaning."
-		socket.removeListener "error", _handleSocketError
-		docker.removeListener "logs",  _handleDockerLogs
-		pingJob.cancel()
-		stateJob.cancel()
+	ping = (cb) ->
+		customPublish
+			topic: "ping"
+			message: deviceId
+		, (error) ->
+			log.error error if error
 
 	_sendStateToMqtt = (cb) ->
 		log.info "Sending state.."
@@ -69,7 +58,7 @@ module.exports = (socket, docker, deviceId) ->
 			byteLength = Buffer.byteLength( stateStr, 'utf8' )
 			log.warn "Buffer.byteLength: #{byteLength}" if byteLength > 20000 # .02MB spam per 2 sec = 864MB in 24 hrs
 
-			socket.customPublish
+			customPublish
 				topic: "devices/#{deviceId}/state"
 				message: stateStr
 				opts:
@@ -87,7 +76,7 @@ module.exports = (socket, docker, deviceId) ->
 
 	notifyOnlineStatus = (cb) ->
 		log.info "Setting status: online"
-		socket.customPublish
+		customPublish
 			topic: "devices/#{deviceId}/status"
 			message: "online"
 			opts:
@@ -99,16 +88,6 @@ module.exports = (socket, docker, deviceId) ->
 
 			cb error
 
-	_handleDockerLogs = (logs) ->
-		debug "Publishing log line.."
-		socket.customPublish {
-			topic: "devices/#{deviceId}/logs"
-			message: JSON.stringify logs
-			opts:
-				retain: true
-				qos: 2
-		}
-
 	setWork = (work) ->
 		debug "Set work", work
 		localState = Object.assign {}, localState, { work }
@@ -116,25 +95,13 @@ module.exports = (socket, docker, deviceId) ->
 
 	publishLog = (type, message) ->
 		data = { type, message, time: Date.now() / 1000 }
-		socket.customPublish {
+		customPublish {
 			topic: "devices/#{deviceId}/logs"
 			message: JSON.stringify data
 			opts:
 				retain: true
 				qos: 2
 		}
-
-	throttledPublishLogState = _.throttle ->
-		socket.customPublish {
-			topic: "devices/#{deviceId}/logs-state"
-			message: JSON.stringify logsState
-			opts:
-				retain: true
-				qos: 2
-		}
-	, 2000
-
-
 
 	getDeviceId = -> deviceId
 
@@ -157,7 +124,6 @@ module.exports = (socket, docker, deviceId) ->
 
 		groups
 
-
 	setGroups = (groups) ->
 		groups = "#{JSON.stringify groups}\n"
 		log.info "Setting groups file: #{groups}"
@@ -171,22 +137,6 @@ module.exports = (socket, docker, deviceId) ->
 
 	getGlobalGroups = ->
 		localState.globalGroups
-
-
-	checkSerialNumber = ->
-		certFile = fs.readFileSync config.mqtt.tls.cert
-		certSerial = (S certFile.toString())
-			.between "CN=vc-", "/name"
-			.s
-
-		debug "Check serial number positive:", deviceId is "vc-#{certSerial}"
-		deviceId is "vc-#{certSerial}"
-
-
-	_handleSocketError = (error) ->
-		return log.error error.message if error
-
-
 
 	_getOSVersion = (cb) ->
 		fs.readFile "/version", (error, version) ->
@@ -232,11 +182,9 @@ module.exports = (socket, docker, deviceId) ->
 
 	return {
 		publishLog
-		init
 		throttledSendState
 		notifyOnlineStatus
 		setWork
-		clean
 		getDeviceId
 		getGroups
 		setGroups

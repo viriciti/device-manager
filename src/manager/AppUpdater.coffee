@@ -6,19 +6,10 @@ semver   = require "semver"
 
 log = (require "../lib/Logger") "App Updater"
 
-module.exports = (docker, state, mqttSocket) ->
+module.exports = (docker, state) ->
 	updating = false
-	_handleGroups = ->
-
-	init = ->
-		mqttSocket.on "global:collection", _handleGroups
-
-	clean = ->
-		mqttSocket.removeListener "global:collection", _handleGroups
 
 	isUpdating = -> updating
-
-
 
 	_createGroupsMixin = (groups, deviceGroups) ->
 		deviceGroupsLabels = _(deviceGroups).values()
@@ -27,9 +18,6 @@ module.exports = (docker, state, mqttSocket) ->
 			mixin = _(mixin).extend {}, mixin, groups[label]
 			mixin
 		, {}
-
-
-
 
 	_getAppsToChange = (groupsMixin, deviceCurrentApps) ->
 		manualAppsNames =_.chain deviceCurrentApps
@@ -77,9 +65,6 @@ module.exports = (docker, state, mqttSocket) ->
 	_hasDifferentEnvironment = (configEnv, currentEnv) ->
 		_(configEnv).some (env) ->
 			not _(currentEnv).contains env
-
-
-
 
 	_isToUpdate = (appToInstall, currentApp) ->
 		(_hasDifferentEnvironment appToInstall.environment, currentApp.environment) ||
@@ -133,8 +118,6 @@ module.exports = (docker, state, mqttSocket) ->
 		update groups, state.getGroups(), (error, result) ->
 			return log.error error.message if error
 			log.info "Device updated correctly!"
-
-	_handleGroups = _.debounce _handleCollection, 2000
 
 
 	update = (groups, deviceGroups, cb) ->
@@ -246,8 +229,6 @@ module.exports = (docker, state, mqttSocket) ->
 
 
 	return {
-		init
-		clean
 		update
 		isUpdating
 		_createGroupsMixin # For testing purposes
