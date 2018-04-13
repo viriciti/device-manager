@@ -54,10 +54,7 @@ class DockerLogsParser
 	_handleDeleteImageLogs: (logs) ->
 		imageID = (logs.Actor.ID.split ":")[1]
 		time = logs.time
-		return { message: "An image has been removed image", time }
-
-
-
+		return { message: "An image has been removed", time }
 
 	_handleStartContainerLogs: (logs) ->
 		containerName = logs.Actor.Attributes.name
@@ -85,6 +82,6 @@ class DockerLogsParser
 
 	_handleDyingContainer: (logs) ->
 		time = logs.time
-		return { message: "Container #{logs.Actor.Attributes.name} has died!", time }
+		return { message: "Container #{logs.Actor.Attributes.name} has died!", time, type: "warning" }
 
 module.exports = DockerLogsParser

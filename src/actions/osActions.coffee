@@ -15,7 +15,7 @@ module.exports = (state) ->
 
 		{ host, port } = config.osUpdater.endpoint
 
-		osUpdaterUrl = "http://#{host}:#{port}"
+		osUpdaterUrl = "http://#{host}:#{port}/reboot"
 
 		retryOpts =
 			times:    10
@@ -24,12 +24,16 @@ module.exports = (state) ->
 		async.retry retryOpts, (cb) ->
 			request.post osUpdaterUrl, (error, result) ->
 				if error
-					state.addError "OS updater unreachable"
+					state.addLog "error", "OS updater unreachable"
 					return cb error
+				unless result.statusCode is 200
+					state.addLog "error", "OS updater statusCode #{result.statusCode}"
+					return cb new Error "OS updater came back with #{result.statusCode}"
+
 				state.setWork "Reboot command received"
 				cb()
 		, (error) ->
-			state.addError "Sending reboot failed" if error
+			state.addLog "error", "Sending reboot failed: #{error.message}" if error
 			cb error
 
 	return { reboot }

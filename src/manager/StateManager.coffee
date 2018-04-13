@@ -14,7 +14,17 @@ log            = (require "../lib/Logger") "StateManager"
 
 DATE_FORMAT = "YYYY-MM-DD hh:mm:ss"
 
+allowedLogsTypes =
+	info: 1
+	error: 1
+	warning: 1
+
 module.exports = (socket, docker, deviceId) ->
+	logsState =
+		info: []
+		error: []
+		warning: []
+
 	localState =
 		work: ""
 		errors: []
@@ -35,8 +45,6 @@ module.exports = (socket, docker, deviceId) ->
 
 		docker.on "logs", _handleDockerLogs
 
-		docker.on "statusContainers", _handleStatusContainers
-
 		# Ping for keeping the connection on
 		pingJob = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *", ->
 			debug "Scheduled ping: #{config.cronJobs.ping}"
@@ -53,8 +61,7 @@ module.exports = (socket, docker, deviceId) ->
 	clean = ->
 		log.info "Cleaning."
 		socket.removeListener "error", _handleSocketError
-		docker.removeListener "statusContainers", _handleStatusContainers
-		docker.removeListener "logs", _handleDockerLogs
+		docker.removeListener "logs",  _handleDockerLogs
 		pingJob.cancel()
 		stateJob.cancel()
 
@@ -102,32 +109,55 @@ module.exports = (socket, docker, deviceId) ->
 			cb error
 
 	_handleDockerLogs = (logs) ->
+		console.log "logs", logs
 		debug "Publishing log line.."
 		socket.customPublish {
 			topic: "devices/#{deviceId}/logs"
 			message: JSON.stringify logs
+			opts:
+				retain: true
+				qos: 2
 		}
-
-	_handleStatusContainers = (status) ->
-		debug "Status containers is kicking state.."
-
 
 	setWork = (work) ->
 		debug "Set work", work
 		localState = Object.assign {}, localState, { work }
 		throttledSendState()
 
-	addError = (error) ->
-		log.error error
-		error = error.message if typeof error is "object"
-		error = error.substr 0, 20 # To reduce stringified data size
-		error = "#{moment().format DATE_FORMAT} - #{error}"
+	# We need some way to persist a couple of logs
+	# because we want to be able to show them in updater server
+	# Right now updater server subs to the logs topic, but this is not enough as we want more than one log
+	# So lets keep them in the state manager
+	# Whenever there is an error we append and send the error state to a seperate mqtt topic
+	addLog = (type, message) ->
+		throw new Error "Log type #{type} is not allowed" unless logsState[type]
 
-		errors     = localState.errors.concat error
-		errors     = _.rest errors if errors > 10
-		localState = Object.assign {}, localState, { errors }
+		log[type] message
 
-		throttledSendState()
+		message = message.message if typeof message is "object"
+		message = message.substr 0, 47 # To reduce stringified data size
+		message = message + "..." if message.length >= 47
+
+		data = { message, time: Date.now() / 1000 }
+
+		logs = logsState[type].concat data
+		logs = _.rest logs if logs > 10
+
+		logsState = Object.assign {}, logsState, "#{type}": logs
+
+		throttledPublishLogState()
+
+	throttledPublishLogState = _.throttle ->
+		socket.customPublish {
+			topic: "devices/#{deviceId}/logs-state"
+			message: JSON.stringify logsState
+			opts:
+				retain: true
+				qos: 2
+		}
+	, 2000
+
+
 
 	getDeviceId = -> deviceId
 
@@ -224,7 +254,7 @@ module.exports = (socket, docker, deviceId) ->
 			cb null, state
 
 	return {
-		addError
+		addLog
 		init
 		throttledSendState
 		notifyOnlineStatus

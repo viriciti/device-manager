@@ -6,7 +6,7 @@ module.exports = (state) ->
 
 	refreshState = (payload, cb) ->
 		debug "Refresh state"
-		state.kickState()
+		state.throttledSendState()
 		cb()
 
 	return {
