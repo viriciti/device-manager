@@ -1,6 +1,5 @@
 _                = require "underscore"
 { EventEmitter } = require "events"
-{ Writable }     = require "stream"
 async            = require "async"
 debug            = (require "debug") "app:docker"
 Dockerode        = require "dockerode"
@@ -12,9 +11,10 @@ S                = require "string"
 
 log              = (require "./Logger") "Docker"
 DockerLogsParser = require "./DockerLogsParser"
+LayerFixer       = require "./LayerFixer"
 
 class Docker extends EventEmitter
-	constructor: ({ @socketPath, @maxRetries, @registry_auth, @layer }) ->
+	constructor: ({ @socketPath, @maxRetries, @registry_auth }) ->
 		@dockerClient = @_createConnection()
 		@logsParser = new DockerLogsParser @
 
@@ -72,12 +72,11 @@ class Docker extends EventEmitter
 	###
 		Images API
 	###
-	pullImage: ({ name }, cb, pullRetries = 0) =>
+	pullImage: ({ name }, cb) =>
 		next = _.once cb
 
 		log.info "Pull image `#{name}`..."
 
-		conflicted     = false
 		credentials    = null
 		credentials    = @registry_auth.credentials if @registry_auth.required
 
@@ -98,32 +97,10 @@ class Docker extends EventEmitter
 					time: moment().format('MMMM Do YYYY, h:mm:ss a')
 			, 3000
 
-			pullChecker = new Writable
-				objectMode: true
-				write: (data, enc, cb) =>
-					pulling = true
-
-					return cb() unless data.error
-
-					conflictingDirectory = @layer.regex.exec data.error
-						.shift()
-						.trim()
-
-					unless conflictingDirectory
-						return cb new Error data.error
-
-					if pullRetries > @layer.regex.maxRetries
-						return cb new Error "Unable to fix docker layer: too many retries"
-
-					error = new Error Removing conflicting directory: #{conflictingDirectory}"
-					error.conflictingDirectory = conflictingDirectory
-
-					cb error
-
 			pump [
 				stream
 				jsonstream2.parse()
-				pullChecker
+				new LayerFixer()
 			], (error) ->
 				pulling = false
 				clearInterval _pullingPingTimeout
@@ -135,7 +112,7 @@ class Docker extends EventEmitter
 						if error
 							log.error error.message
 							return next error
-						@pullImage { name }, next, ++pullRetries
+						@pullImage { name }, next
 
 				next error
 
