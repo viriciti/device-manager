@@ -37,6 +37,7 @@
     "jsonstream2": "^1.1.1",
     "moment": "^2.19.1",
     "node-schedule": "^1.2.5",
+    "pump": "^3.0.0",
     "request": "^2.83.0",
     "retry": "^0.10.1",
     "rimraf": "^2.6.2",

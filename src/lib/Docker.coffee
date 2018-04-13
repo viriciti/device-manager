@@ -1,12 +1,14 @@
-Dockerode        = require "dockerode"
-S                = require "string"
 _                = require "underscore"
+{ EventEmitter } = require "events"
+{ Writable }     = require "stream"
 async            = require "async"
 debug            = (require "debug") "app:docker"
+Dockerode        = require "dockerode"
 jsonstream2      = require "jsonstream2"
 moment           = require "moment"
+pump             = require "pump"
 rimraf           = require "rimraf"
-{ EventEmitter } = require "events"
+S                = require "string"
 
 log              = (require "./Logger") "Docker"
 DockerLogsParser = require "./DockerLogsParser"
@@ -70,12 +72,11 @@ class Docker extends EventEmitter
 	###
 		Images API
 	###
-	pullImage: ({ name }, cb) =>
+	pullImage: ({ name }, cb, pullRetries = 0) =>
 		next = _.once cb
 
 		log.info "Pull image `#{name}`..."
 
-		@pullRetries or= 0
 		conflicted     = false
 		credentials    = null
 		credentials    = @registry_auth.credentials if @registry_auth.required
@@ -97,65 +98,46 @@ class Docker extends EventEmitter
 					time: moment().format('MMMM Do YYYY, h:mm:ss a')
 			, 3000
 
-			_removeHandlers = ->
+			pullChecker = new Writable
+				objectMode: true
+				write: (data, enc, cb) =>
+					pulling = true
+
+					return cb() unless data.error
+
+					conflictingDirectory = @layer.regex.exec data.error
+						.shift()
+						.trim()
+
+					unless conflictingDirectory
+						return cb new Error data.error
+
+					if pullRetries > @layer.regex.maxRetries
+						return cb new Error "Unable to fix docker layer: too many retries"
+
+					error = new Error Removing conflicting directory: #{conflictingDirectory}"
+					error.conflictingDirectory = conflictingDirectory
+
+					cb error
+
+			pump [
+				stream
+				jsonstream2.parse()
+				pullChecker
+			], (error) ->
+				pulling = false
 				clearInterval _pullingPingTimeout
 
-				stream
-					.removeListener "data", _handleStreamData
-					.removeListener "error", _handleStreamError
-					.removeListener "end", _handleStreamEnd
+				log.error "An error occured in pull: #{error.message}" if error
 
-			_handleStreamData = (data) =>
-				pulling = true
+				if error?.conflictingDirectory
+					return rimraf error.conflictingDirectory, (error) =>
+						if error
+							log.error error.message
+							return next error
+						@pullImage { name }, next, ++pullRetries
 
-				return unless data.error?
-
-				conflictingDirectory = @layer.regex.exec data.error
-					.shift()
-					.trim()
-
-				return unless conflictingDirectory?
-
-				if @pullRetries > @layer.regex.maxRetries
-					message = "Unable to fix docker layer: too many retries"
-					log.error message
-					return next new Error message
-
-				pulling    = false
-				conflicted = true
-				_removeHandlers()
-
-				log.warn "Removing conflicting directory: #{conflictingDirectory}"
-				rimraf conflictingDirectory, (error) =>
-					if error
-						log.error error.message
-						return next error
-
-					@pullRetries++
-					@pullImage { name }, next
-
-			_handleStreamError = (error) ->
-				return if conflicted
-
-				log.error "Error pulling `#{name}` (in stream): #{error.message}"
-				pulling = false
-				_removeHandlers()
 				next error
-
-			_handleStreamEnd = =>
-				return if conflicted
-
-				@pullRetries = 0
-				pulling      = false
-				_removeHandlers()
-				log.info "Pulling ended!"
-				next()
-
-			stream
-				.pipe jsonstream2.parse()
-				.on "data", _handleStreamData
-				.on "error", _handleStreamError
-				.once "end", _handleStreamEnd
 
 	listImages: (cb) =>
 		@dockerClient.listImages (error, images) =>
