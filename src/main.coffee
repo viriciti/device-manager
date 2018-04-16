@@ -120,18 +120,28 @@ client.on "connected", (socket) ->
 			return log.error "Error processing action `#{action}`: #{error.message}" if error
 			log.info "Action `#{action}` completed"
 
+	# NOTE Unsub?
+	# I guess the entire scope of this socket is gone when we get a new socket after reconnect but still?
+	# While testing publish to the osUpdater topic we just trigger once even after a couple of mqtt dis- reconnects.
+	# So it looks like it's fine
+	socket.customSubscribe
+		topic: config.osUpdater.topic
+		opts:
+			qos: 2
+	, (error) ->
+		log.error "An error occured subscribing to the topic #{config.osUpdater.topic}: #{error.message}" if error
+
 	socket
-		.on "action", _onAction
-		.on "error",  handleSocketError
+		.on "action",               _onAction
+		.on "error",                handleSocketError
+		.on config.osUpdater.topic, osUpdater.handleVersion
 
 	socket.once "disconnected", ->
 		log.warn "Disconnected from mqtt"
 
-		socket.removeListener "action", _onAction
-		socket.removeListener "error", handleSocketError
-
-		pingJob.cancel() # TODO activate ping job and cancel this one indeed
-		stateJob.cancel()
+		socket.removeListener "action",               _onAction
+		socket.removeListener "error",                handleSocketError
+		socket.removeListener config.osUpdater.topic, osUpdater.handleVersion
 
 client
 	.on "error", (error) ->
