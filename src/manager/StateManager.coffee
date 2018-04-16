@@ -14,7 +14,7 @@ log            = (require "../lib/Logger") "StateManager"
 
 DATE_FORMAT = "YYYY-MM-DD hh:mm:ss"
 
-module.exports = (socket, docker, deviceId) ->
+module.exports = (getSocket, docker, deviceId) ->
 
 	checkSerialNumber = ->
 		return true if config.development
@@ -35,8 +35,9 @@ module.exports = (socket, docker, deviceId) ->
 	groupsFilePath = config.groups.path
 
 	customPublish = (opts, cb) ->
+		socket = getSocket()
 		return cb?() unless socket
-		socket opts, cb
+		socket.customPublish opts, cb
 
 	ping = (cb) ->
 		customPublish
@@ -136,7 +137,7 @@ module.exports = (socket, docker, deviceId) ->
 
 	setGlobalGroups = (globalGroups) ->
 		debug "Set global groups to: #{JSON.stringify globalGroups}"
-		localState = _(localState).extend {}, localState, { globalGroups }
+		localState = _.extend {}, localState, { globalGroups }
 
 	getGlobalGroups = ->
 		localState.globalGroups

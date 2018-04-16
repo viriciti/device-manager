@@ -15,7 +15,8 @@ StateManager = require './manager/StateManager'
 
 osUpdaterUrl   = "http://#{config.osUpdater.host}:#{config.osUpdater.port}"
 
-mqttSocket   = null
+mqttSocket    = null
+getMqttSocket = -> mqttSocket
 sioSocket     = io osUpdaterUrl
 
 lastWill =
@@ -31,14 +32,14 @@ log.info "Booting up manager..."
 docker = new Docker config.docker
 docker.init() # FIXME
 
-state     = StateManager mqttSocket, docker, HOSTNAME
+state      = StateManager getMqttSocket, docker, config.host
 appUpdater = AppUpdater   docker,        state
 osUpdater  = OsUpdater    sioSocket,     state
 
 docker.on "logs", ({ type, message, time } = {}) ->
 	state.publishLog type, message, time
 
-{ execute } = require("./manager/actionsMap") docker, state, updater
+{ execute } = require("./manager/actionsMap") docker, state, appUpdater
 
 client = devicemqtt _.extend {}, config.mqtt, (if config.development then tls: null else {})
 
@@ -51,7 +52,7 @@ client = devicemqtt {
 	extraOpts: connectionOptions
 }
 
-checkingJob = null # TODO quit @ disconnect
+checkingJob = null # TODO quit @ disconnect?
 
 # Ping for keeping the connection on
 pingJob     = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *",  state.ping
