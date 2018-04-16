@@ -1,12 +1,17 @@
+os = require "os"
+
 module.exports =
+	host: os.hostname()
+
 	mqtt:
 		host: "device-manager.viriciti.com"
 		port: 8883
 		tls:
-			key: "/certs/ivh.key"
+			key:  "/certs/ivh.key"
 			cert: "/certs/ivh.crt"
-			ca: "/certs/ca.crt"
-		connectionOptions:
+			ca:   "/certs/ca.crt"
+		clientId: os.hostname()
+		extraOpts:
 			keepalive: 1800
 			rejectUnauthorized: true
 
@@ -25,10 +30,9 @@ module.exports =
 		state: 5
 
 	osUpdater:
-		mqttTopic: "enabledOsVersion"
-		endpoint:
-			host: "localhost"
-			port: 3003
+		topic: "enabledOsVersion"
+		host:  "localhost"
+		port:  3003
 
 	docker:
 		layer:

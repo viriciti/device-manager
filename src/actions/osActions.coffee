@@ -13,7 +13,7 @@ module.exports = (state) ->
 		log.info "Received reboot command"
 		state.setWork "Rebooting"
 
-		{ host, port } = config.osUpdater.endpoint
+		{ host, port } = config.osUpdater
 
 		osUpdaterUrl = "http://#{host}:#{port}/reboot"
 

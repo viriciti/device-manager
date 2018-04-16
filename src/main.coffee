@@ -16,7 +16,7 @@ HOSTNAME     = os.hostname()
 mqttSocket   = null
 
 lastWill =
-	topic   : "devices/#{HOSTNAME}/status"
+	topic   : "devices/#{config.host}/status"
 	payload : "offline"
 
 queue = async.queue (task, cb) ->
@@ -26,17 +26,17 @@ queue = async.queue (task, cb) ->
 log.info "Booting up manager..."
 
 docker = new Docker config.docker
-docker.init()
+docker.init() # FIXME
 
 state     = StateManager mqttSocket, docker, HOSTNAME
-updater   = AppUpdater   docker, state
+appUpdater = AppUpdater   docker,        state
 osUpdater = OsUpdater    state
 
 docker.on "logs", state.publishLog
 
 { execute } = require("./manager/actionsMap") docker, state, updater
 
-{ host, port, tls, connectionOptions, tlsActive } = config.mqtt
+client = devicemqtt _.extend {}, config.mqtt, (if config.development then tls: null else {})
 
 tls = null if config.development
 client = devicemqtt {
@@ -50,32 +50,35 @@ client = devicemqtt {
 checkingJob = null # TODO quit @ disconnect
 
 # Ping for keeping the connection on
-pingJob  = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *",  state.ping
-stateJob = schedule.scheduleJob "0 */#{config.cronJobs.state} * * * *", state.throttledSendState
+pingJob     = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *",  state.ping
+stateJob    = schedule.scheduleJob "0 */#{config.cronJobs.state} * * * *", state.throttledSendState
 
 # Period checking of the Docker state
 checkingJob = schedule.scheduleJob "0 */#{config.cronJobs.checkDockerStatus} * * * *", ->
-	if updater.isUpdating()
+	if appUpdater.isUpdating()
 		log.info "Not checking Docker: already updating."
 		return
 
 	log.info "Checking Docker state..."
-	updater.update state.getGlobalGroups(), state.getGroups(), (error, result) ->
+	appUpdater.update state.getGlobalGroups(), state.getGroups(), (error, result) ->
 		if error
-			return log.error "Error in updater update: #{error.message}"
+		return log.error "Error in appUpdater update: #{error.message}" if error
 
 		log.info "Finished checking Docker state..."
 
 client.on "connected", (socket) ->
+	log.info "Connected to the MQTT Broker"
+
 	mqttSocket = socket
 
 	handleSocketError = (error) ->
-		return log.error error.message if error
+		return log.error "MQTT socket error!: #{error.message}" if error
 
 	log.info "Connected to the MQTT Broker"
 
 	debug "Kicking state"
 	state.throttledSendState()
+
 	state.notifyOnlineStatus (error) ->
 		throw error if error
 		log.info "Initial state sent successfully!"
@@ -100,6 +103,7 @@ client.on "connected", (socket) ->
 					reply.send type: "success", data: result, (error, ack) ->
 						log.error "An error occured sending the message: #{error.message}" if error
 
+						# TODO Investigate, this looks funny, maybe there is a better way
 						if action isnt "getContainerLogs"
 							debug "Action `#{action}` kicking state"
 							state.throttledSendState()
@@ -124,7 +128,9 @@ client.on "connected", (socket) ->
 		pingJob.cancel() # TODO activate ping job and cancel this one indeed
 		stateJob.cancel()
 
-client.on "error", (error) ->
-	log.error "An error occured: #{error.message}"
+client
+	.on "error", (error) ->
+		log.error "An error occured: #{error.message}"
+	.connect lastWill
 
 client.connect lastWill
