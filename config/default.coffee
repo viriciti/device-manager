@@ -21,7 +21,7 @@ module.exports =
 	# in minutes
 	cronJobs:
 		checkDockerStatus: 5
-		ping: 30
+		ping:  30
 		state: 5
 
 	osUpdater:

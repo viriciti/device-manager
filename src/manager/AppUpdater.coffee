@@ -85,9 +85,6 @@ module.exports = (docker, state) ->
 				memo
 			, {}
 
-
-
-
 	_handleCollection = (label, collection) ->
 		debug "Incoming collection", label, collection
 
@@ -173,9 +170,6 @@ module.exports = (docker, state) ->
 			debug "Handle collections setting state to `idle`"
 			state.setWork "idle"
 			cb error, result
-
-
-
 
 	_removeApps = (apps, cb) ->
 		async.eachLimit apps, 1,

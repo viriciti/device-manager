@@ -83,7 +83,7 @@ test 'parse logs coming from handling an image', (assert)->
 					Type: 'image'
 					Action: 'delete'
 					time: 1486390930
-				expected: { message: 'An image has been removed image', time: 1486390930}
+				expected: { message: 'An image has been removed', time: 1486390930}
 			}
 	]
 

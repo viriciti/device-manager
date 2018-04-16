@@ -181,14 +181,15 @@ module.exports = (socket, docker, deviceId) ->
 			cb null, state
 
 	return {
-		publishLog
-		throttledSendState
-		notifyOnlineStatus
-		setWork
 		getDeviceId
-		getGroups
-		setGroups
-		setGlobalGroups
 		getGlobalGroups
+		getGroups
+		notifyOnlineStatus
+		ping
+		publishLog
+		setGlobalGroups
+		setGroups
+		setWork
+		throttledSendState
 	}
 

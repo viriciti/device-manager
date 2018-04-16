@@ -12,7 +12,6 @@ module.exports = (docker, state, updater) ->
 		osActions
 	} = require "../actions"
 
-
 	execute = ({ action, payload }, cb) ->
 		debug "Execute action `#{action}`, payload: #{JSON.stringify payload}"
 		if not actionsMap[action]
