@@ -93,11 +93,14 @@ module.exports = (socket, docker, deviceId) ->
 		localState = Object.assign {}, localState, { work }
 		throttledSendState()
 
-	publishLog = (type, message) ->
-		data = { type, message, time: Date.now() / 1000 }
+	publishLog = (type, message, time) ->
+		message = message.message if typeof message is "object"
+		data    = { type: type or "info", message, time: time or Date.now() / 1000 }
+		data    = JSON.stringify data
+		debug "Sending: #{data}"
 		customPublish {
 			topic: "devices/#{deviceId}/logs"
-			message: JSON.stringify data
+			message: data
 			opts:
 				retain: true
 				qos: 2
