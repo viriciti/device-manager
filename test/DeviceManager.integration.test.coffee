@@ -5,7 +5,7 @@
 # }
 
 test       = require 'tape'
-devicemqtt = require '@tn-group/device-mqtt'
+devicemqtt = require 'device-mqtt'
 { fork }   = require "child_process"
 AppUpdater = require '../src/manager/AppUpdater'
 Docker     = require '../src/lib/Docker'
