@@ -2,7 +2,7 @@ _          = require "underscore"
 async      = require "async"
 config     = require "config"
 debug      = (require "debug") "app:main"
-devicemqtt = require "@tn-group/device-mqtt"
+devicemqtt = require "device-mqtt"
 os         = require "os"
 io         = require "socket.io-client"
 schedule   = require "node-schedule"
@@ -43,22 +43,11 @@ docker.on "logs", ({ type, message, time } = {}) ->
 
 client = devicemqtt _.extend {}, config.mqtt, (if config.development then tls: null else {})
 
-tls = null if config.development
-client = devicemqtt {
-	host
-	port
-	tls
-	clientId:  HOSTNAME
-	extraOpts: connectionOptions
-}
-
 checkingJob = null # TODO quit @ disconnect?
 
 # Ping for keeping the connection on
 pingJob     = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *",  state.ping
 stateJob    = schedule.scheduleJob "0 */#{config.cronJobs.state} * * * *", state.throttledSendState
-
-# Period checking of the Docker state
 checkingJob = schedule.scheduleJob "0 */#{config.cronJobs.checkDockerStatus} * * * *", ->
 	if appUpdater.isUpdating()
 		log.info "Not checking Docker: already updating."
@@ -66,9 +55,7 @@ checkingJob = schedule.scheduleJob "0 */#{config.cronJobs.checkDockerStatus} * *
 
 	log.info "Checking Docker state..."
 	appUpdater.update state.getGlobalGroups(), state.getGroups(), (error, result) ->
-		if error
 		return log.error "Error in appUpdater update: #{error.message}" if error
-
 		log.info "Finished checking Docker state..."
 
 client.on "connected", (socket) ->
@@ -79,14 +66,10 @@ client.on "connected", (socket) ->
 	handleSocketError = (error) ->
 		return log.error "MQTT socket error!: #{error.message}" if error
 
-	log.info "Connected to the MQTT Broker"
-
-	debug "Kicking state"
 	state.throttledSendState()
 
 	state.notifyOnlineStatus (error) ->
 		throw error if error
-		log.info "Initial state sent successfully!"
 
 	_onAction = (action, payload, reply) ->
 		log.info "New action received: \n #{action} - Payload: #{JSON.stringify payload}"
@@ -148,4 +131,9 @@ client
 		log.error "An error occured: #{error.message}"
 	.connect lastWill
 
-client.connect lastWill
+module.exports = {
+	client
+	queue
+	mqttSocket
+	state
+}
