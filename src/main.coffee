@@ -35,7 +35,8 @@ state     = StateManager mqttSocket, docker, HOSTNAME
 appUpdater = AppUpdater   docker,        state
 osUpdater  = OsUpdater    sioSocket,     state
 
-docker.on "logs", state.publishLog
+docker.on "logs", ({ type, message, time } = {}) ->
+	state.publishLog type, message, time
 
 { execute } = require("./manager/actionsMap") docker, state, updater
 
