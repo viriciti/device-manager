@@ -1,8 +1,10 @@
+_          = require "underscore"
 async      = require "async"
 config     = require "config"
 debug      = (require "debug") "app:main"
 devicemqtt = require "@tn-group/device-mqtt"
 os         = require "os"
+io         = require "socket.io-client"
 schedule   = require "node-schedule"
 
 log          = require("./lib/Logger") "Main"
@@ -11,9 +13,10 @@ AppUpdater   = require './manager/AppUpdater'
 OsUpdater    = require './manager/OsUpdater'
 StateManager = require './manager/StateManager'
 
-HOSTNAME     = os.hostname()
+osUpdaterUrl   = "http://#{config.osUpdater.host}:#{config.osUpdater.port}"
 
 mqttSocket   = null
+sioSocket     = io osUpdaterUrl
 
 lastWill =
 	topic   : "devices/#{config.host}/status"
@@ -30,7 +33,7 @@ docker.init() # FIXME
 
 state     = StateManager mqttSocket, docker, HOSTNAME
 appUpdater = AppUpdater   docker,        state
-osUpdater = OsUpdater    state
+osUpdater  = OsUpdater    sioSocket,     state
 
 docker.on "logs", state.publishLog
 
