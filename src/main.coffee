@@ -126,9 +126,10 @@ client.on "connected", (socket) ->
 		socket.removeListener "error",                handleSocketError
 		socket.removeListener config.osUpdater.topic, osUpdater.handleVersion
 
+debug "Connecting to mqtt at #{config.mqtt.host}:#{config.mqtt.port}"
 client
 	.on "error", (error) ->
-		log.error "An error occured: #{error.message}"
+		log.error "MWTT client error occured: #{error.message}"
 	.connect lastWill
 
 module.exports = {

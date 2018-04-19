@@ -55,7 +55,7 @@ gulp.task('compile', shell.task([
 ]))
 
 gulp.task('send-package', shell.task[
-  `scp -i ${config.key} package.json root@${deviceIP}:/data/Dev/device-manager`
+  `scp -i ${config.key} ${__dirname}/package.json root@${deviceIP}:/data/Dev/device-manager/src`
 ])
 
 gulp.task('cmd', shell.task([
