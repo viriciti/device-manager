@@ -4,7 +4,7 @@
    In other cases, just use the npm scripts.
 */
 
-config = require("config").dev
+config = require("config")
 gulp = require('gulp')
 Rsync = require('rsync')
 path = require('path')
@@ -13,11 +13,12 @@ shell = require('gulp-shell')
 toWatch = ['src/**/*.coffee', 'package.json', 'config/local.coffee']
 outputDir = path.join(__dirname, '/*')
 deviceIP = config.ip
+
 ivhDir = 'root@' + deviceIP + ':/data/Dev/device-manager'
 
-startCommand = '/bin/bash -c "cd /Dev; nodemon src/main.coffee"'
+startCommand   = '/bin/bash -c "cd /Dev; NODE_ENV=dev_device nodemon src/main.coffee"'
 installCommand = '/bin/bash -c "cd /Dev; npm i --production"'
-nodeCommand = 'docker run \
+nodeCommand    = 'docker run \
 	--net host \
 	-i \
 	--rm \
@@ -27,6 +28,10 @@ nodeCommand = 'docker run \
 	-v /version:/version \
 	-v /var/run/docker.sock:/var/run/docker.sock \
 	-v /data/Dev/device-manager:/Dev docker.viriciti.com/device/docker-node-dev '
+
+if (!deviceIP) {
+  throw new Error("deviceIP is falsy!")
+}
 
 gulp.task('sync', function () {
 

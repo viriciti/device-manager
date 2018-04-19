@@ -4,7 +4,9 @@
   "description": "Device manager",
   "scripts": {
     "start": "nodemon src/main.coffee",
-    "inspect": "nodemon --inspect src/main.coffee",
+    "develop": "NODE_ENV=dev nodemon src/main.coffee",
+    "device": "NODE_ENV=dev_device gulp",
+    "device-install": "NODE_ENV=dev_device gulp install",
     "test": "coffeetape test/*.test.coffee | tap-summary",
     "test-dev": "NODE_ENV=development nodemon test/*.test.* --exec coffeetape test/*.test.coffee | tap-summary",
     "test-debug": "NODE_ENV=development nodemon test/*.test.coffee --exec coffeetape test/*.test.coffee | tap-spec",
