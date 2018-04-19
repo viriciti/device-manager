@@ -14,7 +14,7 @@ toWatch = ['src/**/*.coffee', 'package.json', 'config/local.coffee']
 outputDir = path.join(__dirname, '/*')
 deviceIP = config.ip
 
-ivhDir = 'root@' + deviceIP + ':/data/Dev/device-manager'
+ivhDir = `root@${deviceIP}:/data/Dev/device-manager`
 
 startCommand   = '/bin/bash -c "cd /Dev; NODE_ENV=dev_device nodemon src/main.coffee"'
 installCommand = '/bin/bash -c "cd /Dev; npm i --production"'
@@ -55,19 +55,19 @@ gulp.task('compile', shell.task([
 ]))
 
 gulp.task('send-package', shell.task[
-	'scp -i '+ config.key +' package.json root@' + deviceIP + ':/data/Dev/device-manager'
+  `scp -i ${config.key} package.json root@${deviceIP}:/data/Dev/device-manager`
 ])
 
 gulp.task('cmd', shell.task([
-	'ssh -i '+ config.key +' root@' + deviceIP
+  `ssh -i ${config.key} root@${deviceIP}`
 ]))
 
 gulp.task('start', shell.task([
-	"ssh -i "+ config.key +" root@" + deviceIP + " '" + nodeCommand + "" + startCommand + "'"
+	`ssh -i ${config.key} root@${deviceIP} '${nodeCommand} ${startCommand}'`
 ]))
 
 gulp.task('install', shell.task([
-	"ssh -i "+ config.key +" root@" + deviceIP + " '" + nodeCommand + "" + installCommand + "'"
+	`ssh -i ${config.key} root@${deviceIP} '${nodeCommand} ${installCommand}'`
 ]))
 
 gulp.task('watch', function () {
