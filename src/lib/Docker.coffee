@@ -73,8 +73,6 @@ class Docker extends EventEmitter
 		Images API
 	###
 	pullImage: ({ name }, cb, pullRetries = 0) =>
-		next = _.once cb
-
 		log.info "Pull image `#{name}`..."
 
 		credentials    = null
@@ -83,7 +81,7 @@ class Docker extends EventEmitter
 		@dockerClient.pull name, { authconfig: credentials }, (error, stream) =>
 			if error
 				log.error "Error pulling `#{name}`: #{error.message}"
-				return next error
+				return cb error
 
 			pulling = false
 
@@ -101,20 +99,21 @@ class Docker extends EventEmitter
 				stream
 				jsonstream2.parse()
 				new LayerFixer pullRetries
-			], (error) ->
+			], (error) =>
 				pulling = false
 				clearInterval _pullingPingTimeout
 
-				log.error "An error occured in pull: #{error.message}" if error
+				return cb() unless error
 
-				if error?.conflictingDirectory
-					return rimraf error.conflictingDirectory, (error) =>
-						if error
-							log.error error.message
-							return next error
-						@pullImage { name }, next, ++pullRetries
+				log.error "An error occured in pull: #{error.message}"
+				return cb error unless error.conflictingDirectory
 
-				next error
+				rimraf error.conflictingDirectory, (error) =>
+					if error
+						log.error "Error while removing dir '#{error.conflictingDirectory}': #{error.message}"
+						return cb error
+
+					@pullImage { name }, cb, ++pullRetries
 
 	listImages: (cb) =>
 		@dockerClient.listImages (error, images) =>

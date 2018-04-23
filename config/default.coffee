@@ -33,7 +33,7 @@ module.exports =
 	docker:
 		layer:
 			regex: /(\/(var\/lib\/)?docker\/image\/overlay2\/layerdb\/sha256\/[\w\d]+)/
-			maxRetries: 5
+			maxPullRetries: 5
 		socketPath: "/var/run/docker.sock"
 		maxRetries: 5
 		registry_auth:
