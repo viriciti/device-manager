@@ -22,9 +22,6 @@ class Docker extends EventEmitter
 		return new Dockerode socketPath: @socketPath, maxRetries: @maxRetries
 
 	init: ->
-		@_emitData()
-
-	_emitData: =>
 		_handleStreamError = (error) =>
 			@emit "error", error
 

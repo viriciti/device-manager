@@ -43,8 +43,6 @@ docker.on "logs", ({ type, message, time } = {}) ->
 
 client = devicemqtt _.extend {}, config.mqtt, (if config.development then tls: null else {})
 
-checkingJob = null # TODO quit @ disconnect?
-
 # Ping for keeping the connection on
 pingJob     = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *",  state.ping
 stateJob    = schedule.scheduleJob "0 */#{config.cronJobs.state} * * * *", state.throttledSendState
