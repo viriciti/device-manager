@@ -101,10 +101,6 @@ client.on "connected", (socket) ->
 			return log.error "Error processing action `#{action}`: #{error.message}" if error
 			log.info "Action `#{action}` completed"
 
-	# NOTE Unsub?
-	# I guess the entire scope of this socket is gone when we get a new socket after reconnect but still?
-	# While testing publish to the osUpdater topic we just trigger once even after a couple of mqtt dis- reconnects.
-	# So it looks like it's fine
 	socket.customSubscribe
 		topic: config.osUpdater.topic
 		opts:
@@ -116,13 +112,19 @@ client.on "connected", (socket) ->
 		.on "action",               _onAction
 		.on "error",                handleSocketError
 		.on config.osUpdater.topic, osUpdater.handleVersion
+		.on "global:collection",    appUpdater.debouncedHandleCollection
 
 	socket.once "disconnected", ->
 		log.warn "Disconnected from mqtt"
 
+
+	clean = ->
+		mqttSocket.removeListener "global:collection", _handleGroups
+
 		socket.removeListener "action",               _onAction
 		socket.removeListener "error",                handleSocketError
 		socket.removeListener config.osUpdater.topic, osUpdater.handleVersion
+		socket.removeListener "global:collection",    appUpdater.debouncedHandleCollection
 
 debug "Connecting to mqtt at #{config.mqtt.host}:#{config.mqtt.port}"
 client

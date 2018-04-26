@@ -6,3 +6,5 @@ module.exports =
 	development: true
 
 	ip: "192.168.2.100"
+
+	key: process.env.IVH_SSH_KEY

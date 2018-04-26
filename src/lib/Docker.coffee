@@ -1,5 +1,6 @@
 _                = require "underscore"
 { EventEmitter } = require "events"
+config           = require "config"
 async            = require "async"
 debug            = (require "debug") "app:docker"
 Dockerode        = require "dockerode"
