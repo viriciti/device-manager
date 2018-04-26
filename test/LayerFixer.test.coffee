@@ -1,9 +1,8 @@
-test   = require "tape"
-config = require "config"
+test = require "tape"
 
 LayerFixer = require "../src/lib/LayerFixer"
 
-{ regex } = config.docker.layer
+regex = /(\/(var\/lib\/)?docker\/image\/overlay2\/layerdb\/sha256\/[\w\d]+)/
 
 test "Layer regex should not return the incorrect path", (t) ->
     paths = [
@@ -33,17 +32,11 @@ test "Layer regex should not return a match if it is not the correct error", (t)
     t.equal null, regex.exec message
     t.end()
 
-test "Layer stream should start with 0 retries", (t) ->
-    stream = new LayerFixer
-
-    t.equal stream.pullRetries, 0
-    t.end()
-
 test "Layer stream should not handle if non-error", (t) ->
     t.plan 1
     message = "failed to register layer: rename /docker/image/overlay2/layerdb/tmp/write-set-123456789 /docker/image/overlay2/layerdb/sha256/9db9d1f00b0dad8297099fcdaa1faf040a5b1f80042ba0482685aeb305e4a124"
 
-    stream = new LayerFixer
+    stream = new LayerFixer regex
     stream.write message, "utf-8", (error) ->
         t.equal error, undefined
         t.end()
@@ -53,19 +46,9 @@ test "Layer stream should pass conflicting directory in callback", (t) ->
     message =
         error: "failed to register layer: rename /docker/image/overlay2/layerdb/tmp/write-set-123456789 /docker/image/overlay2/layerdb/sha256/9db9d1f00b0dad8297099fcdaa1faf040a5b1f80042ba0482685aeb305e4a124"
 
-    stream = new LayerFixer
+    stream = new LayerFixer regex
     stream.write message, "utf-8", (error) ->
         t.ok error instanceof Error
         t.ok error.conflictingDirectory
         t.equal error.conflictingDirectory, "/docker/image/overlay2/layerdb/sha256/9db9d1f00b0dad8297099fcdaa1faf040a5b1f80042ba0482685aeb305e4a124"
-        t.end()
-
-test "Layer stream should increase retries when an error passes", (t) ->
-    t.plan 1
-    message =
-        error: "failed to register layer: rename /docker/image/overlay2/layerdb/tmp/write-set-123456789 /docker/image/overlay2/layerdb/sha256/9db9d1f00b0dad8297099fcdaa1faf040a5b1f80042ba0482685aeb305e4a124"
-
-    stream = new LayerFixer
-    stream.write message, "utf-8", (error) ->
-        t.equal stream.pullRetries, 1
         t.end()

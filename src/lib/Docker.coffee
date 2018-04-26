@@ -75,6 +75,9 @@ class Docker extends EventEmitter
 	pullImage: ({ name }, cb, pullRetries = 0) =>
 		log.info "Pull image `#{name}`..."
 
+		if pullRetries > config.docker.layer.maxPullRetries
+			return cb new Error "Unable to fix docker layer: too many retries"
+
 		credentials    = null
 		credentials    = @registry_auth.credentials if @registry_auth.required
 
@@ -98,7 +101,7 @@ class Docker extends EventEmitter
 			pump [
 				stream
 				jsonstream2.parse()
-				new LayerFixer pullRetries
+				new LayerFixer config.docker.layer.regex
 			], (error) =>
 				pulling = false
 				clearInterval _pullingPingTimeout
