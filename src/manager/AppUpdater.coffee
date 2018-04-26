@@ -188,28 +188,18 @@ module.exports = (docker, state) ->
 		return false unless endStepName?
 
 		_stepNameToNum = (step) ->
-			let num = 0
-			switch(step) {
-				case "Pull":
-					num = 1
-					break
-				case "Clean":
-					num = 2
-					break
-				case "Create":
-					num = 3
-					break
-				case "Start":
-					num = 4
-					break
-				default:
-					num = 0
-			}
+			num = 0
+			switch step
+				when "Pull"   then num = 1
+				when "Clean"  then num = 2
+				when "Create" then num = 3
+				when "Start"  then num = 4
+				else					     num = 0
 
-			currentStep = _stepNameToNum currentStepName
-			endStep     = _stepNameToNum endStepName
+		currentStep = _stepNameToNum currentStepName
+		endStep     = _stepNameToNum endStepName
 
-			return currentStep > endStep
+		return currentStep > endStep
 
 	_installApp = (appConfig, cb) ->
 		containerInfo =
