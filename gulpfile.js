@@ -14,7 +14,7 @@ toWatch = ['src/**/*.coffee', 'package.json', 'config/local.coffee']
 outputDir = path.join(__dirname, '/*')
 deviceIP = config.ip
 
-ivhDir = `root@${deviceIP}:/data/Dev/device-manager`
+remoteLocation = `root@${deviceIP}:/data/Dev/device-manager`
 
 startCommand   = '/bin/bash -c "cd /Dev; NODE_ENV=dev_device nodemon src/main.coffee"'
 installCommand = '/bin/bash -c "cd /Dev; npm i --production"'
@@ -28,7 +28,8 @@ nodeCommand    = 'docker run \
 	-v /version:/version \
   -v /data/groups:/groups \
 	-v /var/run/docker.sock:/var/run/docker.sock \
-	-v /data/Dev/device-manager:/Dev docker.viriciti.com/device/docker-node-dev '
+  -v /data/Dev/device-manager:/Dev \
+  docker.viriciti.com/device/docker-node-dev'
 
 if (!deviceIP) {
   throw new Error("deviceIP is falsy!")
@@ -39,7 +40,7 @@ gulp.task('sync', function () {
 	rsync = new Rsync()
 		.flags('rtvu')
 		.source(outputDir)
-		.destination(ivhDir)
+		.destination(remoteLocation)
 		.set('delete')
 		.set('exclude-from', path.resolve(__dirname, 'sync_excludes'))
 		.set('progress')
@@ -55,9 +56,9 @@ gulp.task('compile', shell.task([
 	"npm run build-backend"
 ]))
 
-gulp.task('send-package', shell.task[
-  `scp -i ${config.key} ${__dirname}/package.json root@${deviceIP}:/data/Dev/device-manager/src`
-])
+gulp.task('send-package', shell.task([
+  `scp -i ${config.key} ${__dirname}/package.json ${remoteLocation}`
+]))
 
 gulp.task('cmd', shell.task([
   `ssh -i ${config.key} root@${deviceIP}`
@@ -67,7 +68,7 @@ gulp.task('start', shell.task([
 	`ssh -i ${config.key} root@${deviceIP} '${nodeCommand} ${startCommand}'`
 ]))
 
-gulp.task('install', shell.task([
+gulp.task('install-task', shell.task([
 	`ssh -i ${config.key} root@${deviceIP} '${nodeCommand} ${installCommand}'`
 ]))
 
@@ -75,4 +76,5 @@ gulp.task('watch', function () {
 	gulp.watch(toWatch, ['sync'])
 })
 
-gulp.task('default', ['watch', 'sync', 'start'])
+gulp.task('install', [ 'send-package', 'install-task' ])
+gulp.task('default', [ 'watch', 'sync', 'start' ])
