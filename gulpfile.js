@@ -35,6 +35,11 @@ if (!deviceIP) {
   throw new Error("deviceIP is falsy!")
 }
 
+if (!config.key) {
+  throw new Error("No SSH key specified! Please run 'export IVH_SSH_KEY=<path_to_your_key>'")
+}
+
+
 gulp.task('sync', function () {
 
 	rsync = new Rsync()
