@@ -26,6 +26,7 @@ nodeCommand    = `docker run \
 	--rm \
 	--name dev-${appName} \
 	-e 'DEBUG=app:*' \
+	-e 'DOCKER_REGISTRY_TOKEN=${config.docker.registry_auth.credentials.password}' \
 	-v /config/certs:/certs \
 	-v /version:/version \
   -v /data/groups:/groups \
