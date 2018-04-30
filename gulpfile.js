@@ -26,6 +26,7 @@ nodeCommand    = 'docker run \
 	-e \'DEBUG=app:*\' \
 	-v /config/certs:/certs \
 	-v /version:/version \
+  -v /data/groups:/groups \
 	-v /var/run/docker.sock:/var/run/docker.sock \
 	-v /data/Dev/device-manager:/Dev docker.viriciti.com/device/docker-node-dev '
 
