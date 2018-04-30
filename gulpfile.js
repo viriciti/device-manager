@@ -14,29 +14,31 @@ toWatch = ['src/**/*.coffee', 'package.json', 'config/local.coffee']
 outputDir = path.join(__dirname, '/*')
 deviceIP = config.ip
 
-remoteLocation = `root@${deviceIP}:/data/Dev/device-manager`
+appName = require(__dirname + '/package.json').name
+
+remoteLocation = `root@${deviceIP}:/data/Dev/${appName}`
 
 startCommand   = '/bin/bash -c "cd /Dev; NODE_ENV=dev_device nodemon src/main.coffee"'
-installCommand = '/bin/bash -c "cd /Dev; npm i --production"'
-nodeCommand    = 'docker run \
+installCommand = '/bin/bash -c "mkdir -p /Dev; cd /Dev; npm i --production"'
+nodeCommand    = `docker run \
 	--net host \
 	-i \
 	--rm \
-	--name dev \
-	-e \'DEBUG=app:*\' \
+	--name dev-${appName} \
+	-e 'DEBUG=app:*' \
 	-v /config/certs:/certs \
 	-v /version:/version \
   -v /data/groups:/groups \
 	-v /var/run/docker.sock:/var/run/docker.sock \
-  -v /data/Dev/device-manager:/Dev \
-  docker.viriciti.com/device/docker-node-dev'
+  -v /data/Dev/${appName}:/Dev \
+  docker.viriciti.com/device/docker-node-dev`
 
 if (!deviceIP) {
-  throw new Error("deviceIP is falsy!")
+  throw new Error('deviceIP is falsy!')
 }
 
 if (!config.key) {
-  throw new Error("No SSH key specified! Please run 'export IVH_SSH_KEY=<path_to_your_key>'")
+  throw new Error(`No SSH key specified! Please run 'export IVH_SSH_KEY=<path_to_your_key>'`)
 }
 
 
