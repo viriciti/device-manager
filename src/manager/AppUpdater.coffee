@@ -123,10 +123,7 @@ module.exports = (docker, state) ->
 		debug "Global groups are #{JSON.stringify groups}"
 		debug "Device groups are #{JSON.stringify deviceGroups}"
 
-		if _.isEmpty groups
-			errStr = "Global groups is empty! Not proceding."
-			log.error errStr
-			return cb new Error errStr
+		return cb new Error "Global groups is empty! Not proceding." if _.isEmpty groups
 
 		updating = true
 
