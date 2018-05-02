@@ -76,6 +76,7 @@ client.on "connected", (socket) ->
 		task =
 			name: action
 			fn: (cb) ->
+				debug "Action queue length: #{queue.length()}"
 				debug "Action `#{action}` being executed"
 				execute { action, payload }, (error, result) ->
 					debug "Received an error: #{error.message}" if error
