@@ -4,7 +4,7 @@ class LayerFixer extends Writable
 	constructor: (@regex) ->
 		super objectMode: true
 
-	write: (data, enc, cb) =>
+	_write: (data, enc, cb) =>
 		return cb() unless data.error
 
 		conflictingDirectory = @regex.exec data.error
