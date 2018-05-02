@@ -288,14 +288,15 @@ class Docker extends EventEmitter
 
 		log.info "Getting `#{numOfLogs}` logs for `#{id}`"
 
-		return cb() unless numOfLogs
+		if not numOfLogs or numOfLogs > 100
+			return cb null, [ "\u0001\u0000\u0000\u0000\u0000\u0000\u00007\u001b[32minfo\u001b[39m: [DeviceManager] Invalid Log Request" ]
 
 		container = @dockerClient.getContainer id
 		logsOpts =
-			stdout: 1
-			stderr: 1
-			tail: numOfLogs
-			follow: 0
+			stdout: true
+			stderr: true
+			tail:   numOfLogs
+			follow: false
 
 		container.logs logsOpts, (error, logs) =>
 			if error
@@ -307,20 +308,7 @@ class Docker extends EventEmitter
 				log.error errStr
 				return cb new Error errStr
 
-			console.log ""
-			console.log "KOMT IEE"
-			console.log ""
-			console.log ""
-
-			logs
-				.split "\n"
-				.forEach (str) -> console.log str
-
-			console.log ""
-			console.log "KOMT IEE"
-			console.log ""
-			console.log ""
-
+			logs = logs.split("\n").filter (l) -> not _.isEmpty l
 
 			cb null, logs
 
