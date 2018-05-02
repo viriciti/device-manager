@@ -116,7 +116,8 @@ module.exports = (docker, state) ->
 			return log.error error.message if error
 			log.info "Device updated correctly!"
 
-	debouncedHandleCollection = _.debounce _handleCollection, 2000
+	# debouncedHandleCollection = _.debounce _handleCollection, 2000
+	debouncedHandleCollection = _handleCollection
 
 	update = (groups, deviceGroups, cb) ->
 		debug "Updating..."

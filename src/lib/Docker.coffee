@@ -128,7 +128,9 @@ class Docker extends EventEmitter
 			async.map images, (image, next) =>
 				# In order to inspect the image, one tag is needed. RepoTags[0] is enough.
 				@getImageByName image.RepoTags[0], (error, imageInfo) ->
-					return next error if error
+					if error
+						debug "Error ocurred: #{error.message}"
+						return next error
 					next null, imageInfo
 			, cb
 
@@ -286,6 +288,8 @@ class Docker extends EventEmitter
 
 		log.info "Getting `#{numOfLogs}` logs for `#{id}`"
 
+		return cb() unless numOfLogs
+
 		container = @dockerClient.getContainer id
 		logsOpts =
 			stdout: 1
@@ -293,30 +297,31 @@ class Docker extends EventEmitter
 			tail: numOfLogs
 			follow: 0
 
-		optsf =
-			path: "/containers/#{id}/logs?"
-			method: "GET"
-			isStream: false
-			statusCodes:
-				200: true,
-				404: "no such container"
-				500: "server error"
-			options: logsOpts
-
-
-		# container.modem.dial optsf, (error, data) ->
-		# 	cb error, data.toString()
-
-		container.logs logsOpts, (error, stream) =>
+		container.logs logsOpts, (error, logs) =>
 			if error
 				log.error "Error retrieving container logs for `#{id}`"
 				return cb error
 
-			stream
-				.on "data", (data) =>
-					buffer.push data.toString()
-				.once "end", ->
-					log.info "log stream for `#{id}` ended."
-					cb null, buffer
+			unless logs
+				errStr = "Did not receive logs!"
+				log.error errStr
+				return cb new Error errStr
+
+			console.log ""
+			console.log "KOMT IEE"
+			console.log ""
+			console.log ""
+
+			logs
+				.split "\n"
+				.forEach (str) -> console.log str
+
+			console.log ""
+			console.log "KOMT IEE"
+			console.log ""
+			console.log ""
+
+
+			cb null, logs
 
 module.exports = Docker
