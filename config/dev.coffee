@@ -9,6 +9,6 @@ module.exports =
 	docker:
 		registry_auth:
 			credentials:
-				password: process.env.GL_ACCESS_TOKEN
+				password: process.env.GITLAB_ACCESS_TOKEN # Create one in your profile at git.viriciti.com
 
 	development: true

@@ -12,24 +12,24 @@ shell  = require('gulp-shell')
 
 toWatch     = ['src/**/*.coffee', 'package.json', 'config/local.coffee']
 outputDir   = path.join(__dirname, '/*')
-deviceIP    = config.ip
-dockerToken = config.docker.registry_auth.credentials.password
+
+const { ip, dockerToken, key } = config.dev
+
 appName     = require(__dirname + '/package.json').name
 
-remoteLocation = `root@${deviceIP}:/data/Dev/${appName}`
+remoteLocation = `root@${ip}:/data/Dev/${appName}`
 
 if (!dockerToken) {
   throw new Error('dockerToken is falsy!')
 }
 
-if (!deviceIP) {
-  throw new Error('deviceIP is falsy!')
+if (!ip) {
+  throw new Error('ip is falsy!')
 }
 
-if (!config.key) {
+if (!key) {
   throw new Error(`No SSH key specified! Please run 'export IVH_SSH_KEY=<path_to_your_key>'`)
 }
-
 
 startCommand   = '/bin/bash -c "cd /Dev; NODE_ENV=dev_device nodemon src/main.coffee"'
 installCommand = `/bin/bash -c "cd /Dev; rm -rf ${appName}; mkdir -p ${appName}; cd ${appName}; npm i --production"`
@@ -70,19 +70,19 @@ gulp.task('compile', shell.task([
 ]))
 
 gulp.task('send-package', shell.task([
-  `scp -i ${config.key} ${__dirname}/package.json ${remoteLocation}/package.json`
+  `scp -i ${key} ${__dirname}/package.json ${remoteLocation}/package.json`
 ]))
 
 gulp.task('cmd', shell.task([
-  `ssh -i ${config.key} root@${deviceIP}`
+  `ssh -i ${key} root@${ip}`
 ]))
 
 gulp.task('start', shell.task([
-	`ssh -i ${config.key} root@${deviceIP} '${nodeCommand} ${startCommand}'`
+	`ssh -i ${key} root@${ip} '${nodeCommand} ${startCommand}'`
 ]))
 
 gulp.task('install-task', shell.task([
-	`ssh -i ${config.key} root@${deviceIP} '${nodeCommand} ${installCommand}'`
+	`ssh -i ${key} root@${ip} '${nodeCommand} ${installCommand}'`
 ]))
 
 gulp.task('watch', function () {
