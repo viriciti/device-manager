@@ -16,7 +16,7 @@ module.exports = (sioSocket, state) ->
 		log.info "Disconnected from os updater"
 
 	handleVersion = (version) ->
-		log.info "Received request to update OS to version: #{version}"
+		log.info "Received request to update OS to version: '#{version}'"
 		sioSocket.emit "update-dm", version, (error) ->
 			if error
 				log.error error
