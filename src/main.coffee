@@ -29,9 +29,7 @@ queue = async.queue (task, cb) ->
 
 log.info "Booting up manager..."
 
-docker = new Docker config.docker
-docker.init() # FIXME
-
+docker     = new Docker   config.docker
 state      = StateManager getMqttSocket, docker, config.host
 appUpdater = AppUpdater   docker,        state
 osUpdater  = OsUpdater    sioSocket,     state

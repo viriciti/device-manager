@@ -19,10 +19,6 @@ class Docker extends EventEmitter
 		@dockerClient = @_createConnection()
 		@logsParser = new DockerLogsParser @
 
-	_createConnection: ->
-		return new Dockerode socketPath: @socketPath, maxRetries: @maxRetries
-
-	init: ->
 		_handleStreamError = (error) =>
 			@emit "error", error
 
@@ -47,14 +43,15 @@ class Docker extends EventEmitter
 				.on "close", ->
 					log.warn "Closed connection to Docker daemon."
 
+
+	_createConnection: ->
+		return new Dockerode socketPath: @socketPath, maxRetries: @maxRetries
+
 	_handleStatusContainers: (logs) ->
 		@emit "statusContainers"
 
 	stop: ->
 		@dockerClient = null
-
-
-
 
 	getDockerInfo: (cb) =>
 		@dockerClient.version (error, info) ->
@@ -63,9 +60,6 @@ class Docker extends EventEmitter
 				version: info.Version,
 				linuxKernel: info.KernelVersion
 			}
-
-
-
 
 	###
 		Images API
