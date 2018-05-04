@@ -44,7 +44,7 @@ docker.on "logs", ({ type, message, time } = {}) ->
 client = devicemqtt _.extend {}, config.mqtt, (if config.development then tls: null else {})
 
 # Ping for keeping the connection on
-pingJob     = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *",  state.ping
+# pingJob     = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *",  state.ping
 stateJob    = schedule.scheduleJob "0 */#{config.cronJobs.state} * * * *", state.throttledSendState
 checkingJob = schedule.scheduleJob "0 */#{config.cronJobs.checkDockerStatus} * * * *", ->
 	if appUpdater.isUpdating()
@@ -57,17 +57,16 @@ checkingJob = schedule.scheduleJob "0 */#{config.cronJobs.checkDockerStatus} * *
 		log.info "Finished checking Docker state..."
 
 client.on "connected", (socket) ->
-	log.info "Connected to the MQTT Broker"
+	log.info "Connected to the MQTT Broker socket id: #{socket.id}"
 
 	mqttSocket = socket
 
-	handleSocketError = (error) ->
-		return log.error "MQTT socket error!: #{error.message}" if error
+	state.notifyOnlineStatus (error) ->
+		console.log('error', error)
+		throw error if error
 
 	state.throttledSendState()
 
-	state.notifyOnlineStatus (error) ->
-		throw error if error
 
 	_onAction = (action, payload, reply) ->
 		log.info "New action received: \n #{action} - Payload: #{JSON.stringify payload}"
@@ -105,32 +104,33 @@ client.on "connected", (socket) ->
 	socket.customSubscribe
 		topic: config.osUpdater.topic
 		opts:
-			qos: 2
-	, (error) ->
-		log.error "An error occured subscribing to the topic #{config.osUpdater.topic}: #{error.message}" if error
+			qos: 1
+	, (error, granted) ->
+		return log.error "An error occured subscribing to the topic
+			#{config.osUpdater.topic}: #{error.message}" if error
+		debug "Successful subscribe", granted
+
+	_onSocketError = (error) ->
+		log.error "MQTT socket error!: #{error.message}" if error
 
 	socket
-		.on "action",               _onAction
-		.on "error",                handleSocketError
-		.on config.osUpdater.topic, osUpdater.handleVersion
-		.on "global:collection",    appUpdater.debouncedHandleCollection
-
-	socket.once "disconnected", ->
-		log.warn "Disconnected from mqtt"
-
-
-	clean = ->
-		mqttSocket.removeListener "global:collection", _handleGroups
-
-		socket.removeListener "action",               _onAction
-		socket.removeListener "error",                handleSocketError
-		socket.removeListener config.osUpdater.topic, osUpdater.handleVersion
-		socket.removeListener "global:collection",    appUpdater.debouncedHandleCollection
+		.on   "action",               _onAction
+		.on   "error",                _onSocketError
+		.on   "global:collection",    appUpdater.debouncedHandleCollection
+		.on   config.osUpdater.topic, osUpdater.handleVersion
+		.once "disconnected", ->
+			log.warn "Disconnected from mqtt"
+			socket.removeListener "action",               _onAction
+			socket.removeListener "error",                _onSocketError
+			socket.removeListener "global:collection",    appUpdater.debouncedHandleCollection
+			socket.removeListener config.osUpdater.topic, osUpdater.handleVersion
 
 debug "Connecting to mqtt at #{config.mqtt.host}:#{config.mqtt.port}"
 client
 	.on "error", (error) ->
 		log.error "MWTT client error occured: #{error.message}"
+	.on "reconnecting", (error) ->
+		log.info "Reconectiiing"
 	.connect lastWill
 
 module.exports = {

@@ -12,7 +12,7 @@ module.exports =
 			ca:   "/certs/ca.crt"
 		clientId: os.hostname()
 		extraOpts:
-			keepalive: 1800
+			keepalive: 60
 			rejectUnauthorized: true
 
 	devicemqtt:
@@ -44,7 +44,7 @@ module.exports =
 			required: true
 			credentials:
 				username: "device-user"
-				password: process.env.DOCKER_REGISTRY_TOKEN
+				password: process.env.DOCKER_REGISTRY_TOKEN # Create one in your profile at git.viriciti.com
 				email: "device-user@viriciti.com"
 				serveraddress: "https://index.docker.io/v1"
 

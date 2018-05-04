@@ -64,7 +64,7 @@ module.exports = (getSocket, docker, deviceId) ->
 				message: stateStr
 				opts:
 					retain: true
-					qos: 2
+					qos: 1
 			, (error) ->
 				if error
 					log.error "Error in custom state publish: #{error.message}"
@@ -82,7 +82,6 @@ module.exports = (getSocket, docker, deviceId) ->
 			message: "online"
 			opts:
 				retain: true
-				qos: 2
 		, (error) ->
 			if error
 				log.error "Error in online status publish: #{error.message}"
@@ -99,13 +98,16 @@ module.exports = (getSocket, docker, deviceId) ->
 		data    = { type: type or "info", message, time: time or Date.now() / 1000 }
 		data    = JSON.stringify data
 		debug "Sending: #{data}"
-		customPublish {
+		customPublish
 			topic: "devices/#{deviceId}/logs"
 			message: data
 			opts:
 				retain: true
-				qos: 2
-		}
+				qos: 1
+		, (error) ->
+			return log.error "Error in customPublish: #{error.message}" if error
+			debug "Sent: #{data}"
+
 
 	getDeviceId = -> deviceId
 
@@ -165,9 +167,7 @@ module.exports = (getSocket, docker, deviceId) ->
 
 			state = {}
 			systemInfo = _.extend systemInfo, getIpAddresses()
-
-			unless config.development
-				systemInfo = _.extend systemInfo, { osVersion }, { dmVersion: (require path.resolve __dirname, "../package.json").version }
+			systemInfo = _.extend systemInfo, { osVersion }, { dmVersion: process.env.npm_package_version }
 
 			groups = _(getGroups()).values()
 			uptime = Math.floor(os.uptime() / 3600)
