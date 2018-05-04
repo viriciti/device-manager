@@ -41,13 +41,13 @@ docker.on "logs", ({ type, message, time } = {}) ->
 
 client = devicemqtt _.extend {}, config.mqtt, (if config.development then tls: null else {})
 
-# Ping for keeping the connection on
-# pingJob     = schedule.scheduleJob "0 */#{config.cronJobs.ping} * * * *",  state.ping
-stateJob    = schedule.scheduleJob "0 */#{config.cronJobs.state} * * * *", state.throttledSendState
-checkingJob = schedule.scheduleJob "0 */#{config.cronJobs.checkDockerStatus} * * * *", ->
+cronJob = schedule.scheduleJob "0 */#{config.cronJob} * * * *", ->
+	debug "Running cron job"
 	if appUpdater.isUpdating()
 		log.info "Not checking Docker: already updating."
 		return
+
+	state.throttledSendState()
 
 	log.info "Checking Docker state..."
 	appUpdater.update state.getGlobalGroups(), state.getGroups(), (error, result) ->
@@ -59,12 +59,8 @@ client.on "connected", (socket) ->
 
 	mqttSocket = socket
 
-	state.notifyOnlineStatus (error) ->
-		console.log('error', error)
-		throw error if error
-
+	state.notifyOnlineStatus()
 	state.throttledSendState()
-
 
 	_onAction = (action, payload, reply) ->
 		log.info "New action received: \n #{action} - Payload: #{JSON.stringify payload}"
@@ -87,10 +83,10 @@ client.on "connected", (socket) ->
 					reply.send type: "success", data: result, (error, ack) ->
 						log.error "An error occured sending the message: #{error.message}" if error
 
-						# TODO Investigate, this looks funny, maybe there is a better way
-						if action isnt "getContainerLogs"
-							debug "Action `#{action}` kicking state"
-							state.throttledSendState()
+						return cb() if action is "getContainerLogs"
+
+						debug "Action `#{action}` kicking state"
+						state.throttledSendState()
 
 						cb()
 

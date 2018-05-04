@@ -24,10 +24,9 @@ module.exports =
 		whiteList: ["device-manager", "dev"]
 
 	# in minutes
-	cronJobs:
-		checkDockerStatus: 5
-		ping:  30
-		state: 5
+	cronJob: 5
+
+	sendStateThrottletTime: 10000
 
 	osUpdater:
 		topic: "enabledOsVersion"

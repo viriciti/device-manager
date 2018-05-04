@@ -27,9 +27,9 @@ module.exports = (getSocket, docker, deviceId) ->
 		deviceId is "vc-#{certSerial}"
 
 	localState =
-		work: "idle"
-		errors: []
-		globalGroups: {}
+		work:            "idle"
+		errors:          []
+		globalGroups:    {}
 		isSerialCorrect: checkSerialNumber()
 
 	groupsFilePath = config.groups.path
@@ -38,13 +38,6 @@ module.exports = (getSocket, docker, deviceId) ->
 		socket = getSocket()
 		return cb?() unless socket
 		socket.customPublish opts, cb
-
-	ping = (cb) ->
-		customPublish
-			topic: "ping"
-			message: deviceId
-		, (error) ->
-			log.error error if error
 
 	_sendStateToMqtt = (cb) ->
 		log.info "Sending state.."
@@ -73,20 +66,16 @@ module.exports = (getSocket, docker, deviceId) ->
 
 				cb? error
 
-	throttledSendState = _.throttle (-> _sendStateToMqtt()), 2000
+	throttledSendState = _.throttle (-> _sendStateToMqtt()), config.sendStateThrottletTime
 
-	notifyOnlineStatus = (cb) ->
+	notifyOnlineStatus = () ->
 		log.info "Setting status: online"
 		customPublish
 			topic: "devices/#{deviceId}/status"
 			message: "online"
 			opts:
 				retain: true
-		, (error) ->
-			if error
-				log.error "Error in online status publish: #{error.message}"
-
-			cb error
+				qos:    1
 
 	setWork = (work) ->
 		debug "Set work", work
@@ -103,11 +92,10 @@ module.exports = (getSocket, docker, deviceId) ->
 			message: data
 			opts:
 				retain: true
-				qos: 1
+				qos:    0
 		, (error) ->
 			return log.error "Error in customPublish: #{error.message}" if error
 			debug "Sent: #{data}"
-
 
 	getDeviceId = -> deviceId
 
@@ -189,7 +177,6 @@ module.exports = (getSocket, docker, deviceId) ->
 		getGlobalGroups
 		getGroups
 		notifyOnlineStatus
-		ping
 		publishLog
 		setGlobalGroups
 		setGroups
