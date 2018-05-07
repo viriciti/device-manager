@@ -24,11 +24,12 @@ module.exports = (sioSocket, state) ->
 				state.publishLog "error", "OS updater: #{error}"
 
 	_onErrorLog = (error) ->
+		log.error "#{error}"
 		state.publishLog "error", "OS updater: #{error}"
 
 	_onLogs = (updateLog) ->
 		updateLog = JSON.stringify(updateLog) if typeof updateLog is "object"
-		log.info "Updating log: #{updateLog}"
+		log.info "#{updateLog}"
 		state.setWork "State: #{updateLog}"
 		state.publishLog "info", "OS updater: #{updateLog}"
 		# TODO send to state.publishlog

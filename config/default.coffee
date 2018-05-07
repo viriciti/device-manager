@@ -14,6 +14,7 @@ module.exports =
 		extraOpts:
 			keepalive: 60
 			rejectUnauthorized: true
+			reconnectPeriod: 5000
 
 	devicemqtt:
 		queueTimeout: 5000 # never touch it

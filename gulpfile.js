@@ -16,6 +16,7 @@ outputDir   = path.join(__dirname, '/*')
 const { ip, dockerToken, key } = config.dev
 
 appName     = require(__dirname + '/package.json').name
+containerName = `dev-${appName}`
 
 remoteLocation = `root@${ip}:/data/Dev/${appName}`
 
@@ -32,12 +33,13 @@ if (!key) {
 }
 
 startCommand   = '/bin/bash -c "cd /Dev; NODE_ENV=dev_device nodemon src/main.coffee"'
+killCommand    = `docker rm -f /${containerName}`
 installCommand = `/bin/bash -c "cd /Dev; rm -rf ${appName}; mkdir -p ${appName}; cd ${appName}; npm i --production"`
 nodeCommand    = `docker run \
 	--net host \
 	-i \
 	--rm \
-	--name dev-${appName} \
+	--name ${containerName} \
 	-e 'DEBUG=app:*' \
 	-e 'DOCKER_REGISTRY_TOKEN=${dockerToken}' \
 	-v /config/certs:/certs \
@@ -81,6 +83,10 @@ gulp.task('start', shell.task([
 	`ssh -i ${key} root@${ip} '${nodeCommand} ${startCommand}'`
 ]))
 
+gulp.task('kill', shell.task([
+	`ssh -i ${key} root@${ip} ${killCommand}`
+]))
+
 gulp.task('install-task', shell.task([
 	`ssh -i ${key} root@${ip} '${nodeCommand} ${installCommand}'`
 ]))
@@ -90,4 +96,4 @@ gulp.task('watch', function () {
 })
 
 gulp.task('install', [ 'send-package', 'install-task' ])
-gulp.task('default', [ 'watch', 'sync', 'start' ])
+gulp.task('default', [ 'kill', 'watch', 'sync', 'start' ])
