@@ -26,7 +26,7 @@ module.exports =
 	# in minutes
 	cronJob: 5
 
-	sendStateThrottletTime: 10000
+	sendStateThrottleTime: 10000
 
 	osUpdater:
 		topic: "enabledOsVersion"

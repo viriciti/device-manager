@@ -66,7 +66,7 @@ module.exports = (getSocket, docker, deviceId) ->
 
 				cb? error
 
-	throttledSendState = _.throttle (-> _sendStateToMqtt()), config.sendStateThrottletTime
+	throttledSendState = _.throttle (-> _sendStateToMqtt()), config.sendStateThrottleTime
 
 	notifyOnlineStatus = () ->
 		log.info "Setting status: online"
