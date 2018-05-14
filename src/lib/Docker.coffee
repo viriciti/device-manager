@@ -7,7 +7,7 @@ Dockerode        = require "dockerode"
 jsonstream2      = require "jsonstream2"
 moment           = require "moment"
 pump             = require "pump"
-rimraf           = require "rimraf"
+rimraf           = require "../lib/rimraf"
 S                = require "string"
 
 log              = (require "./Logger") "Docker"
