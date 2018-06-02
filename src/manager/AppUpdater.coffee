@@ -207,12 +207,15 @@ module.exports = (docker, state) ->
 					log.info "Image #{containerInfo.Image} pulled correctly."
 					next()
 			(next) ->
+				return next() if appConfig.downloadonly
 				docker.getContainerByName containerInfo.name, (error, c) ->
 					return next() if not c
 					docker.removeContainer id: containerInfo.name, force: true, next
 			(next) ->
+				return next() if appConfig.downloadonly
 				docker.createContainer containerProps: containerInfo, next
 			(next) ->
+				return next() if appConfig.downloadonly
 				docker.startContainer id: containerInfo.name, next
 		], (error, result) ->
 				return cb error if error
