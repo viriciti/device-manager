@@ -18,6 +18,8 @@ module.exports = (getSocket, docker, deviceId) ->
 
 	checkSerialNumber = ->
 		return true if config.development
+		return true if config.skipserialcheck is true
+
 		certFile = fs.readFileSync config.mqtt.tls.cert
 		certSerial = (S certFile.toString())
 			.between "CN=vc-", "/name"
@@ -133,7 +135,7 @@ module.exports = (getSocket, docker, deviceId) ->
 		localState.globalGroups
 
 	_getOSVersion = (cb) ->
-		fs.readFile "/version", (error, version) ->
+		fs.readFile config.version.path, (error, version) ->
 			return cb new Error "Error reading version file: #{error.message}" if error
 			return cb new Error "Version is undefined" unless version
 
@@ -155,7 +157,7 @@ module.exports = (getSocket, docker, deviceId) ->
 
 			state = {}
 			systemInfo = _.extend systemInfo, getIpAddresses()
-			systemInfo = _.extend systemInfo, { osVersion }, { dmVersion: process.env.npm_package_version }
+			systemInfo = _.extend systemInfo, { osVersion }, { dmVersion: (require config.package.path).version }
 
 			groups = _(getGroups()).values()
 			uptime = Math.floor(os.uptime() / 3600)

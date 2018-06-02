@@ -1,4 +1,5 @@
-os = require "os"
+os    = require "os"
+path  = require "path"
 
 module.exports =
 	host: os.hostname()
@@ -23,6 +24,12 @@ module.exports =
 		path: "/groups"
 		mqttTopic: "global/collections/groups"
 		whiteList: ["device-manager", "dev"]
+
+	version:
+		path: "/version"
+
+	package:
+		path: path.resolve "#{__dirname}/../package.json"
 
 	# in minutes
 	cronJob: 5
