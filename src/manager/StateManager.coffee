@@ -183,4 +183,3 @@ module.exports = (getSocket, docker, deviceId) ->
 		setWork
 		throttledSendState
 	}
-

@@ -86,7 +86,7 @@ module.exports = (docker, state) ->
 			, {}
 
 	_handleCollection = (label, collection) ->
-		debug "Incoming collection", label, collection
+		debug "Incoming collection", label
 
 		# guard: only handle groups
 		if label isnt "groups"
@@ -134,7 +134,7 @@ module.exports = (docker, state) ->
 			_getCurrentApps
 
 			(apps, next) ->
-				debug "Current applications are #{JSON.stringify apps}"
+				debug "Current applications are #{JSON.stringify _.keys apps}"
 				if ((_(groups).size() is 1) and _(groups).has "default")
 					return next null, _getAppsToChange groups["default"], apps
 
