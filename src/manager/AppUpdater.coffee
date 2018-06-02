@@ -183,6 +183,34 @@ module.exports = (docker, state) ->
 				_installApp appConfig, next
 		, cb
 
+	_pastLastInstallStep = (currentStepName, endStepName) ->
+
+		return false unless endStepName?
+
+		_stepNameToNum = (step) ->
+			let num = 0
+			switch(step) {
+				case "Pull":
+					num = 1
+					break
+				case "Clean":
+					num = 2
+					break
+				case "Create":
+					num = 3
+					break
+				case "Start":
+					num = 4
+					break
+				default:
+					num = 0
+			}
+
+			currentStep = _stepNameToNum currentStepName
+			endStep     = _stepNameToNum endStepName
+
+			return currentStep > endStep
+
 	_installApp = (appConfig, cb) ->
 		containerInfo =
 			name: appConfig.containerName
@@ -202,20 +230,25 @@ module.exports = (docker, state) ->
 
 		async.series [
 			(next) ->
+				return next () if _pastLastInstallStep("Pull", appConfig.lastInstallStep)
+
 				docker.pullImage name: containerInfo.Image, (error) ->
 					return next error if error
 					log.info "Image #{containerInfo.Image} pulled correctly."
 					next()
 			(next) ->
-				return next() if appConfig.downloadonly
+				return next () if _pastLastInstallStep("Clean", appConfig.lastInstallStep)
+
 				docker.getContainerByName containerInfo.name, (error, c) ->
 					return next() if not c
 					docker.removeContainer id: containerInfo.name, force: true, next
 			(next) ->
-				return next() if appConfig.downloadonly
+				return next () if _pastLastInstallStep("Create", appConfig.lastInstallStep)
+
 				docker.createContainer containerProps: containerInfo, next
 			(next) ->
-				return next() if appConfig.downloadonly
+				return next () if _pastLastInstallStep("Start", appConfig.lastInstallStep)
+
 				docker.startContainer id: containerInfo.name, next
 		], (error, result) ->
 				return cb error if error
